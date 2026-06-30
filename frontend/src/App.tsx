@@ -32,12 +32,16 @@ import { ARTICLES, MOCK_REPORTS } from './data/articles';
 import { Article, Category, ScamReport } from './types';
 import type { User } from './types';
 import AuthModal from './components/AuthModal';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 export default function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <GoogleOAuthProvider clientId={clientId}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }
 

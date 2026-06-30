@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../../config/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
@@ -169,6 +170,95 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({
       success: true,
       user: profile,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google token is required.',
+      });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Google token payload.',
+      });
+    }
+
+    const email = payload.email;
+    const name = payload.name || email.split('@')[0];
+
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      const dummyPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const hash = await bcrypt.hash(dummyPassword, 10);
+      user = await prisma.user.create({
+        data: {
+          email,
+          name,
+          passwordHash: hash,
+          role: 'viewer',
+          status: 'active',
+        },
+      });
+    }
+
+    if (user.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is inactive or suspended.',
+      });
+    }
+
+    const accessToken = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      JWT_REFRESH_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
     });
   } catch (error) {
     next(error);
