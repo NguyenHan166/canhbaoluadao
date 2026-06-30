@@ -1,0 +1,138 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String // super_admin, editor, reviewer, report_manager, viewer
+  status       String // active, inactive
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  articles     Article[]
+  mediaFolders MediaFolder[]
+  mediaFiles   MediaFile[]
+}
+
+model Category {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String     @unique
+  description String?
+  parentId    String?    @db.ObjectId
+  parent      Category?  @relation("CategoryParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    Category[] @relation("CategoryParent")
+  icon        String?
+  color       String?
+  sortOrder   Int        @default(0)
+  isVisible   Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  articles    Article[]
+}
+
+model Article {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  slug         String    @unique
+  summary      String
+  content      String
+  contentType  String    @default("html")
+  coverImageId String?   @db.ObjectId
+  categoryId   String    @db.ObjectId
+  category     Category  @relation(fields: [categoryId], references: [id])
+  tags         String[]
+  warningLevel String // normal, notice, warning, urgent, verified
+  sourceId     String?   @db.ObjectId
+  source       Source?   @relation(fields: [sourceId], references: [id])
+  sourceUrl    String?
+  authorId     String    @db.ObjectId
+  author       User      @relation(fields: [authorId], references: [id])
+  status       String // draft, review, published, hidden, archived
+  isFeatured   Boolean   @default(false)
+  views        Int       @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model MediaFolder {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  parentId  String?       @db.ObjectId
+  parent    MediaFolder?  @relation("FolderParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  MediaFolder[] @relation("FolderParent")
+  path      String
+  createdBy String        @db.ObjectId
+  creator   User          @relation(fields: [createdBy], references: [id])
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  files     MediaFile[]
+}
+
+model MediaFile {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  folderId     String?      @db.ObjectId
+  folder       MediaFolder? @relation(fields: [folderId], references: [id])
+  originalName String
+  storedName   String
+  url          String
+  mimeType     String
+  size         Int
+  altText      String?
+  caption      String?
+  description  String?
+  uploadedBy   String       @db.ObjectId
+  uploader     User         @relation(fields: [uploadedBy], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model ScamReport {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  reporterName   String?
+  contact        String?
+  caseType       String
+  platform       String
+  suspectPhone   String?
+  suspectUrl     String?
+  suspectAccount String?
+  description    String
+  location       String?
+  attachments    String[]
+  status         String   @default("pending") // pending, checking, verified, insufficient, forwarded, converted
+  riskLevel      String?
+  internalNote   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Source {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  type        String
+  website     String?
+  logoId      String?   @db.ObjectId
+  description String?
+  trustStatus String // verified, unverified
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  articles    Article[]
+}
+
+model Setting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  updatedAt DateTime @updatedAt
+}

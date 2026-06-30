@@ -1,0 +1,6 @@
+{
+  "name": "Lá Chắn Số",
+  "description": "Cổng thông tin an toàn số và cảnh báo lừa đảo trực tuyến dành cho người dân Việt Nam",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
