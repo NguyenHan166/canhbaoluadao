@@ -18,6 +18,7 @@ import {
   Globe
 } from 'lucide-react';
 import { User } from '../types';
+import { api } from '../services/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -151,7 +152,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     }, 800);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -162,6 +163,38 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     }
 
     setIsLoading(true);
+
+    try {
+      const response = await api.post('/api/auth/login', {
+        email: loginIdentifier.trim(),
+        password: loginPassword
+      });
+
+      if (response.success && response.accessToken) {
+        localStorage.setItem('lcs_user_token', response.accessToken);
+        localStorage.setItem('lcs_user_refresh_token', response.refreshToken);
+        
+        const loggedInUser: User = {
+          uid: response.user.id,
+          name: response.user.name,
+          email: response.user.email,
+          phone: '',
+          avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(response.user.name)}`,
+        };
+        
+        setIsLoading(false);
+        setSuccess('Đăng nhập thành công! Chào mừng bạn quay trở lại.');
+        setTimeout(() => {
+          onAuthSuccess(loggedInUser);
+          onClose();
+          setLoginIdentifier('');
+          setLoginPassword('');
+        }, 1000);
+        return;
+      }
+    } catch (err: any) {
+      console.warn('Backend login failed, trying local fallback:', err.message);
+    }
 
     setTimeout(() => {
       const users = getStoredUsers();
@@ -185,7 +218,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         setLoginIdentifier('');
         setLoginPassword('');
       }, 1000);
-    }, 800);
+    }, 400);
   };
 
   // Google Simulated Sign-In Options

@@ -136,3 +136,14 @@ model Setting {
   type      String   @default("string")
   updatedAt DateTime @updatedAt
 }
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  userEmail  String
+  userName   String
+  action     String
+  targetId   String?
+  createdAt  DateTime @default(now())
+}
+

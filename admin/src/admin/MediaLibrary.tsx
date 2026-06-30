@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Folder, FolderOpen, FileText, Image as ImageIcon, FileCode, 
-  Search, Upload, Plus, Trash2, Edit3, Copy, Check, Eye, ChevronRight 
+  Search, Upload, Plus, Trash2, Edit3, Copy, Check, Eye, ChevronRight, FolderPlus 
 } from 'lucide-react';
-import { MediaFile, INITIAL_MEDIA_FILES } from './mockData';
+import { api } from '../services/api';
+
+export interface MediaFile {
+  id: string;
+  name: string;
+  url: string;
+  type: 'image' | 'pdf' | 'docx' | 'file';
+  size: string;
+  createdAt: string;
+  uploadedBy?: string;
+  folder?: string;
+  altText?: string;
+  caption?: string;
+}
 
 interface MediaLibraryProps {
   onSelectImage?: (url: string, altText?: string) => void;
@@ -11,96 +24,133 @@ interface MediaLibraryProps {
 }
 
 export default function MediaLibrary({ onSelectImage, isSelectMode = false }: MediaLibraryProps) {
-  // Sync Media Files with localStorage to persist uploads/deletes
-  const [files, setFiles] = useState<MediaFile[]>(() => {
-    const saved = localStorage.getItem('lanchanso_media_files');
-    if (saved) return JSON.parse(saved);
-    localStorage.setItem('lanchanso_media_files', JSON.stringify(INITIAL_MEDIA_FILES));
-    return INITIAL_MEDIA_FILES;
-  });
-
-  const [currentFolder, setCurrentFolder] = useState<string>('/uploads/articles/2026/06');
+  const [foldersList, setFoldersList] = useState<any[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string>('root');
+  const [files, setFiles] = useState<MediaFile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Folder hierarchy representation
-  const folders = [
-    '/uploads',
-    '/uploads/articles',
-    '/uploads/articles/2026',
-    '/uploads/articles/2026/06',
-    '/uploads/articles/2026/07',
-    '/uploads/scam-alerts',
-    '/uploads/banners',
-    '/uploads/reports',
-    '/uploads/documents'
-  ];
-
-  // Helper to save files state
-  const saveFiles = (newFiles: MediaFile[]) => {
-    setFiles(newFiles);
-    localStorage.setItem('lanchanso_media_files', JSON.stringify(newFiles));
+  const getFolderPath = (folderId: string): string => {
+    if (!folderId || folderId === 'root') return '';
+    const f = foldersList.find(x => x.id === folderId);
+    if (!f) return '';
+    if (!f.parentId) return `/${f.name}`;
+    return `${getFolderPath(f.parentId)}/${f.name}`;
   };
 
-  // Filtered files in current folder
-  const currentFiles = files.filter(f => {
-    const matchesFolder = f.folder === currentFolder;
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (f.altText && f.altText.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesFolder && matchesSearch;
-  });
+  const computedFolders = [
+    { id: 'root', path: '/', name: 'Gốc', level: 0 },
+    ...foldersList.map(f => {
+      const path = getFolderPath(f.id);
+      const level = path.split('/').filter(Boolean).length;
+      return {
+        id: f.id,
+        path,
+        name: f.name,
+        level: Math.max(0, level)
+      };
+    }).sort((a, b) => a.path.localeCompare(b.path))
+  ];
 
-  // Handle uploading files (mock)
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newUploads: MediaFile[] = [];
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i];
-        const isImage = file.type.startsWith('image/');
-        const mockUrl = isImage 
-          ? URL.createObjectURL(file) 
-          : '#';
-        
-        const newFile: MediaFile = {
-          id: `m-upload-${Date.now()}-${i}`,
-          name: file.name,
-          url: mockUrl,
-          type: isImage ? 'image' : file.name.endsWith('.pdf') ? 'pdf' : 'docx',
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-          createdAt: new Date().toISOString().split('T')[0],
-          uploadedBy: 'nvhan166@gmail.com',
-          folder: currentFolder,
-          altText: file.name.split('.')[0].replace(/_/g, ' '),
-          caption: 'Ảnh tải lên từ quản trị viên'
-        };
-        newUploads.push(newFile);
+  const currentFolder = currentFolderId === 'root' ? '/' : getFolderPath(currentFolderId);
+
+  const fetchMediaData = async () => {
+    setIsLoading(true);
+    try {
+      const foldersRes = await api.get('/api/admin/media/folders');
+      if (foldersRes.success) {
+        setFoldersList(foldersRes.data);
       }
-      saveFiles([...files, ...newUploads]);
+
+      const filesRes = await api.get(`/api/admin/media/files?folderId=${currentFolderId}`);
+      if (filesRes.success) {
+        const mappedFiles = filesRes.data.map((f: any) => ({
+          id: f.id,
+          name: f.filename,
+          url: f.url,
+          type: f.mimeType?.startsWith('image/') ? 'image' : f.mimeType?.includes('pdf') ? 'pdf' : 'docx',
+          size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
+          createdAt: new Date(f.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+          uploadedBy: f.uploadedBy || 'admin',
+          folder: f.folderId || 'root',
+          altText: f.altText || f.filename.split('.')[0],
+          caption: f.caption || ''
+        }));
+        setFiles(mappedFiles);
+      }
+    } catch (err) {
+      console.error('Failed to load media files/folders:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMediaData();
+  }, [currentFolderId]);
+
+  // Handle uploading files to Cloudflare R2
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setIsLoading(true);
+      try {
+        for (let i = 0; i < e.target.files.length; i++) {
+          const file = e.target.files[i];
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('folderId', currentFolderId);
+          formData.append('altText', file.name.split('.')[0]);
+
+          await api.post('/api/admin/media/upload', formData);
+        }
+        await fetchMediaData();
+      } catch (err: any) {
+        alert(`Lỗi upload file: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   // Create folder simulation
-  const handleCreateFolder = (e: React.FormEvent) => {
+  const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newFolderName.trim()) {
-      const cleanName = newFolderName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
-      const newPath = currentFolder === '/' ? `/${cleanName}` : `${currentFolder}/${cleanName}`;
-      alert(`Đã tạo thư mục ảo: ${newPath}`);
-      setNewFolderName('');
-      setShowNewFolderModal(false);
+      try {
+        setIsLoading(true);
+        await api.post('/api/admin/media/folders', {
+          name: newFolderName.trim(),
+          parentId: currentFolderId === 'root' ? null : currentFolderId
+        });
+        await fetchMediaData();
+        setNewFolderName('');
+        setShowNewFolderModal(false);
+      } catch (err: any) {
+        alert(`Lỗi tạo thư mục: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   // Delete file
-  const handleDeleteFile = (id: string) => {
+  const handleDeleteFile = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa tệp tin này? Thao tác không thể hoàn tác.')) {
-      const updated = files.filter(f => f.id !== id);
-      saveFiles(updated);
-      if (selectedFileId === id) setSelectedFileId(null);
+      try {
+        setIsLoading(true);
+        await api.delete(`/api/admin/media/files/${id}`);
+        await fetchMediaData();
+        if (selectedFileId === id) setSelectedFileId(null);
+      } catch (err: any) {
+        alert(`Lỗi xóa file: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -117,27 +167,34 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
   };
 
   // Handle Drop upload
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      const isImage = file.type.startsWith('image/');
-      const mockUrl = isImage ? URL.createObjectURL(file) : '#';
-      const newFile: MediaFile = {
-        id: `m-drag-${Date.now()}`,
-        name: file.name,
-        url: mockUrl,
-        type: isImage ? 'image' : 'pdf',
-        size: `${(file.size / 1024).toFixed(0)} KB`,
-        createdAt: new Date().toISOString().split('T')[0],
-        uploadedBy: 'nvhan166@gmail.com',
-        folder: currentFolder,
-        altText: file.name,
-        caption: 'Kéo thả tải lên'
-      };
-      saveFiles([...files, newFile]);
+      setIsLoading(true);
+      try {
+        const file = e.dataTransfer.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folderId', currentFolderId);
+        formData.append('altText', file.name.split('.')[0]);
+
+        await api.post('/api/admin/media/upload', formData);
+        await fetchMediaData();
+      } catch (err: any) {
+        alert(`Lỗi upload file: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
+
+  // Filtered files in current folder
+  const currentFiles = files.filter(f => {
+    const matchesFolder = f.folder === currentFolderId;
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (f.altText && f.altText.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesFolder && matchesSearch;
+  });
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row min-h-[500px]">
@@ -151,19 +208,18 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
             className="p-1 hover:bg-slate-100 text-blue-700 rounded transition"
             title="Thư mục mới"
           >
-            <FolderPlusIcon className="w-4 h-4" />
+            <FolderPlus className="w-4 h-4" />
           </button>
         </div>
 
         <nav className="space-y-1 max-h-[380px] overflow-y-auto">
-          {folders.map(f => {
-            const level = f.split('/').length - 2;
-            const isSelected = currentFolder === f;
+          {computedFolders.map(f => {
+            const isSelected = currentFolderId === f.id;
             return (
               <button
-                key={f}
+                key={f.id}
                 onClick={() => {
-                  setCurrentFolder(f);
+                  setCurrentFolderId(f.id);
                   setSelectedFileId(null);
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition text-left ${
@@ -171,14 +227,14 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
                     ? 'bg-blue-900 text-white shadow-sm' 
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
-                style={{ paddingLeft: `${Math.max(0.75, level * 0.75)}rem` }}
+                style={{ paddingLeft: `${Math.max(0.75, f.level * 0.75)}rem` }}
               >
                 {isSelected ? (
                   <FolderOpen className="w-4 h-4 text-amber-300 flex-shrink-0" />
                 ) : (
                   <Folder className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 )}
-                <span className="truncate">{f === '/' ? 'gốc' : f.split('/').pop()}</span>
+                <span className="truncate">{f.name}</span>
               </button>
             );
           })}

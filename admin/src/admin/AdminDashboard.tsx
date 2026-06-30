@@ -20,6 +20,13 @@ interface AdminDashboardProps {
   adminEmail: string;
 }
 
+import { api } from '../services/api';
+
+interface AdminDashboardProps {
+  onLogout: () => void;
+  adminEmail: string;
+}
+
 export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardProps) {
   
   // Tab control: dashboard, posts, write, categories, reports, media, sources, users, settings
@@ -30,27 +37,13 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
     return localStorage.getItem('lanchanso_admin_dark') === 'true';
   });
 
-  // State synchronization with localStorage
-  const [articles, setArticles] = useState<Article[]>(() => {
-    const saved = localStorage.getItem('lanchanso_articles');
-    if (saved) return JSON.parse(saved);
-    // Fallback: App will initialize this, or we fallback to initial loaded values
-    return [];
-  });
-
-  const [reports, setReports] = useState<ScamReport[]>(() => {
-    const saved = localStorage.getItem('lanchanso_reports');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
-
-  const [newsSources, setNewsSources] = useState<NewsSource[]>(() => {
-    const saved = localStorage.getItem('lanchanso_news_sources');
-    if (saved) return JSON.parse(saved);
-    localStorage.setItem('lanchanso_news_sources', JSON.stringify(INITIAL_NEWS_SOURCES));
-    return INITIAL_NEWS_SOURCES;
-  });
-
+  // State synchronization with backend API
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [reports, setReports] = useState<ScamReport[]>([]);
+  const [newsSources, setNewsSources] = useState<NewsSource[]>([]);
+  const [adminUser, setAdminUser] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => {
     const saved = localStorage.getItem('lanchanso_admin_users');
     if (saved) return JSON.parse(saved);
@@ -58,21 +51,17 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
     return INITIAL_ADMIN_USERS;
   });
 
-  const [webSettings, setWebSettings] = useState<WebsiteSettings>(() => {
-    const saved = localStorage.getItem('lanchanso_website_settings');
-    if (saved) return JSON.parse(saved);
-    localStorage.setItem('lanchanso_website_settings', JSON.stringify(INITIAL_WEBSITE_SETTINGS));
-    return INITIAL_WEBSITE_SETTINGS;
+  const [webSettings, setWebSettings] = useState<WebsiteSettings>({
+    siteName: 'Lá Chắn Số',
+    maintenanceMode: false,
+    contactEmail: 'contact@lanchanso.gov.vn',
+    contactPhone: '1900 xxxx',
+    allowNewRegistrations: true,
+    defaultUserRole: 'viewer',
+    footerContent: 'Cổng thông tin phòng chống và cảnh báo lừa đảo trực tuyến Việt Nam.',
+    disclaimer: 'Mọi thông tin tra cứu đều mang tính chất tham khảo.',
+    socialLinks: { facebook: 'https://facebook.com/lanchanso', zalo: 'https://zalo.me/lanchanso' }
   });
-
-  // Categories list
-  const categoriesList: { id: Category; label: string; description: string; color: string; count: number }[] = [
-    { id: 'canh-bao-lua-dao', label: 'Cảnh báo lừa đảo', description: 'Các thủ đoạn, kịch bản, và dấu hiệu lừa đảo trực tuyến từ cuộc gọi, Zalo, SMS.', color: 'border-l-rose-600 bg-rose-50/10 text-rose-700', count: articles.filter(a => a.category === 'canh-bao-lua-dao').length },
-    { id: 'an-ninh-mang', label: 'An ninh mạng', description: 'Tin bảo mật quốc tế, sự cố lộ lọt dữ liệu, cập nhật mã độc nguy hiểm.', color: 'border-l-blue-600 bg-blue-50/10 text-blue-700', count: articles.filter(a => a.category === 'an-ninh-mang').length },
-    { id: 'kien-thuc', label: 'Kiến thức an toàn số', description: 'Khái niệm, thuật ngữ an toàn thông tin cơ bản cho mọi đối tượng.', color: 'border-l-teal-600 bg-teal-50/10 text-teal-700', count: articles.filter(a => a.category === 'kien-thuc').length },
-    { id: 'meo-huu-ich', label: 'Kỹ năng & Mẹo', description: 'Hướng dẫn cài đặt bảo mật 2 lớp Facebook, cấu hình thiết bị an toàn.', color: 'border-l-emerald-600 bg-emerald-50/10 text-emerald-700', count: articles.filter(a => a.category === 'meo-huu-ich').length },
-    { id: 'cong-dong', label: 'Báo cáo cộng đồng', description: 'Ý kiến đóng góp từ nhân dân, phân tích thống kê thiệt hại từ lừa đảo.', color: 'border-l-indigo-600 bg-indigo-50/10 text-indigo-700', count: articles.filter(a => a.category === 'cong-dong').length }
-  ];
 
   // Selected article for editing
   const [selectedArticleToEdit, setSelectedArticleToEdit] = useState<Article | null>(null);
@@ -99,29 +88,169 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   // Toast notification state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Categories list
+  const categoriesList = [
+    { id: 'canh-bao-lua-dao' as Category, label: 'Cảnh báo lừa đảo', description: 'Các thủ đoạn, kịch bản, và dấu hiệu lừa đảo trực tuyến.', color: 'border-l-rose-600 bg-rose-50/10 text-rose-700', count: articles.filter(a => a.category === 'canh-bao-lua-dao').length },
+    { id: 'an-ninh-mang' as Category, label: 'An ninh mạng', description: 'Tin bảo mật quốc tế, sự cố lộ lọt dữ liệu.', color: 'border-l-blue-600 bg-blue-50/10 text-blue-700', count: articles.filter(a => a.category === 'an-ninh-mang').length },
+    { id: 'kien-thuc' as Category, label: 'Kiến thức an toàn số', description: 'Khái niệm, thuật ngữ an toàn thông tin cơ bản.', color: 'border-l-teal-600 bg-teal-50/10 text-teal-700', count: articles.filter(a => a.category === 'kien-thuc').length },
+    { id: 'meo-huu-ich' as Category, label: 'Kỹ năng & Mẹo', description: 'Hướng dẫn cài đặt bảo mật thiết bị an toàn.', color: 'border-l-emerald-600 bg-emerald-50/10 text-emerald-700', count: articles.filter(a => a.category === 'meo-huu-ich').length },
+    { id: 'cong-dong' as Category, label: 'Báo cáo cộng đồng', description: 'Ý kiến đóng góp từ nhân dân.', color: 'border-l-indigo-600 bg-indigo-50/10 text-indigo-700', count: articles.filter(a => a.category === 'cong-dong').length }
+  ];
+
+  const fetchReports = async () => {
+    try {
+      const reportsRes = await api.get('/api/admin/reports');
+      if (reportsRes.success) {
+        const mapped = reportsRes.data.map((rep: any) => ({
+          id: rep.id,
+          userId: rep.userId || undefined,
+          ticketId: rep.ticketId || `LCS-${rep.id.slice(-6).toUpperCase()}`,
+          statusMessage: rep.note || '',
+          reporterName: rep.reporterName || 'Cư dân ẩn danh',
+          reporterContact: rep.contact || 'Không có',
+          scamType: rep.caseType,
+          platform: rep.platform,
+          targetInfo: rep.suspectPhone || rep.suspectUrl || rep.suspectAccount || 'Không có',
+          description: rep.description,
+          location: rep.location || 'Toàn quốc',
+          screenshotUrl: rep.attachments?.[0] || undefined,
+          createdAt: new Date(rep.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          status: rep.status,
+          likesCount: 0,
+          commentsCount: 0
+        }));
+        setReports(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchArticles = async () => {
+    try {
+      const articlesRes = await api.get('/api/admin/articles');
+      if (articlesRes.success) {
+        const mappedArticles = articlesRes.data.map((art: any) => ({
+          id: art.id,
+          title: art.title,
+          slug: art.slug,
+          summary: art.summary,
+          content: art.content,
+          category: art.category?.slug || 'canh-bao-lua-dao',
+          categoryLabel: art.category?.name || 'Cảnh báo lừa đảo',
+          thumbnail: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
+          author: art.author?.name || 'Admin',
+          date: new Date(art.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          readTime: '3 phút đọc',
+          views: art.views || 0,
+          warningLevel: art.warningLevel || 'high',
+          sourceName: art.source?.name || 'Ban biên tập',
+          sourceUrl: art.sourceUrl || ''
+        }));
+        setArticles(mappedArticles);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const logsRes = await api.get('/api/admin/audit-logs');
+      if (logsRes.success) {
+        setAuditLogs(logsRes.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem('lanchanso_admin_dark', String(darkMode));
   }, [darkMode]);
+
+  useEffect(() => {
+    if (activeTab === 'audit') {
+      fetchAuditLogs();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        const profile = await api.get('/api/auth/me');
+        if (!profile.success) {
+          onLogout();
+          return;
+        }
+        setAdminUser(profile.user);
+
+        // Fetch categories first so we can map them
+        const categoriesRes = await api.get('/api/public/categories');
+        if (categoriesRes.success) {
+          setDbCategories(categoriesRes.data);
+        }
+
+        await fetchArticles();
+        await fetchReports();
+
+        const settingsRes = await api.get('/api/public/settings');
+        if (settingsRes.success) {
+          const settingsMap: Record<string, string> = {};
+          settingsRes.data.forEach((s: any) => {
+            settingsMap[s.key] = s.value;
+          });
+          setWebSettings({
+            siteName: settingsMap['site_name'] || 'Lá Chắn Số',
+            maintenanceMode: settingsMap['maintenance_mode'] === 'true',
+            contactEmail: settingsMap['support_email'] || 'contact@lanchanso.gov.vn',
+            contactPhone: settingsMap['support_hotline'] || '1900 xxxx',
+            allowNewRegistrations: settingsMap['allow_registrations'] !== 'false',
+            defaultUserRole: settingsMap['default_role'] || 'viewer',
+            footerContent: settingsMap['footer_content'] || 'Cổng thông tin phòng chống lừa đảo.',
+            disclaimer: settingsMap['disclaimer'] || 'Thông tin tra cứu chỉ mang tính tham khảo.',
+            socialLinks: {
+              facebook: settingsMap['facebook_link'] || 'https://facebook.com/lanchanso',
+              zalo: settingsMap['zalo_link'] || 'https://zalo.me/lanchanso'
+            }
+          });
+        }
+
+        const sourcesRes = await api.get('/api/admin/sources');
+        if (sourcesRes.success) {
+          setNewsSources(sourcesRes.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            website: s.website || '',
+            description: s.description || '',
+            trustedStatus: s.trustStatus === 'verified' ? 'verified' : 'monitoring'
+          })));
+        }
+      } catch (err: any) {
+        console.error('Failed to load CMS data:', err);
+        onLogout();
+      }
+    };
+
+    fetchAllData();
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Sync state helpers
   const saveArticles = (newArticles: Article[]) => {
     setArticles(newArticles);
-    localStorage.setItem('lanchanso_articles', JSON.stringify(newArticles));
   };
 
   const saveReports = (newReports: ScamReport[]) => {
     setReports(newReports);
-    localStorage.setItem('lanchanso_reports', JSON.stringify(newReports));
   };
 
   const saveSources = (newSources: NewsSource[]) => {
     setNewsSources(newSources);
-    localStorage.setItem('lanchanso_news_sources', JSON.stringify(newSources));
   };
 
   const saveUsers = (newUsers: AdminUser[]) => {
@@ -129,17 +258,35 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
     localStorage.setItem('lanchanso_admin_users', JSON.stringify(newUsers));
   };
 
-  const saveSettings = (newSettings: WebsiteSettings) => {
+  const saveSettings = async (newSettings: WebsiteSettings) => {
     setWebSettings(newSettings);
-    localStorage.setItem('lanchanso_website_settings', JSON.stringify(newSettings));
+    try {
+      const updates = [
+        { key: 'site_name', value: newSettings.siteName },
+        { key: 'support_hotline', value: newSettings.contactPhone },
+        { key: 'support_email', value: newSettings.contactEmail },
+        { key: 'footer_content', value: newSettings.footerContent },
+        { key: 'disclaimer', value: newSettings.disclaimer },
+        { key: 'facebook_link', value: newSettings.socialLinks.facebook },
+        { key: 'zalo_link', value: newSettings.socialLinks.zalo }
+      ];
+      await Promise.all(updates.map(u => api.patch('/api/admin/settings', u)));
+      showToast('Đã lưu cấu hình hệ thống Lá Chắn Số thành công!');
+    } catch (e: any) {
+      showToast(`Lỗi lưu cấu hình: ${e.message}`);
+    }
   };
 
   // Delete article
-  const handleDeleteArticle = (id: string) => {
+  const handleDeleteArticle = async (id: string) => {
     if (window.confirm('Bạn có thực sự chắc chắn muốn xóa vĩnh viễn bài viết này? Website công cộng sẽ mất nội dung ngay lập tức.')) {
-      const updated = articles.filter(a => a.id !== id);
-      saveArticles(updated);
-      showToast('Đã xóa bài viết thành công.');
+      try {
+        await api.delete(`/api/admin/articles/${id}`);
+        setArticles(articles.filter(a => a.id !== id));
+        showToast('Đã xóa bài viết thành công.');
+      } catch (err: any) {
+        showToast(`Lỗi xóa bài viết: ${err.message}`);
+      }
     }
   };
 
@@ -211,69 +358,92 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   };
 
   // Save report notes and status
-  const handleSaveReportStatus = (status: ScamReport['status']) => {
+  const handleSaveReportStatus = async (status: ScamReport['status']) => {
     if (selectedReport) {
-      const updated = reports.map(r => {
-        if (r.id === selectedReport.id) {
-          return { 
-            ...r, 
-            status, 
-            statusMessage: reportNote || r.statusMessage,
-            reporterName: hideReporterInfo ? 'Cư dân ẩn danh' : r.reporterName
-          };
-        }
-        return r;
-      });
-      saveReports(updated);
-      setSelectedReport(null);
-      setReportNote('');
-      showToast('Đã cập nhật trạng thái phản ánh.');
+      try {
+        await api.patch(`/api/admin/reports/${selectedReport.id}/status`, { status });
+        await fetchReports();
+        setSelectedReport(null);
+        setReportNote('');
+        showToast('Đã cập nhật trạng thái phản ánh.');
+      } catch (err: any) {
+        showToast(`Lỗi cập nhật trạng thái: ${err.message}`);
+      }
     }
   };
 
   // Transform report into dynamic post draft
-  const handleConvertReportToPost = (rep: ScamReport) => {
-    setSelectedArticleToEdit({
-      id: `art-conv-${Date.now()}`,
-      title: `CẢNH BÁO: Thủ đoạn lừa đảo qua ${rep.scamType.toUpperCase()} nhắm vào đối tượng tại ${rep.location || 'Việt Nam'}`,
-      slug: `canh-bao-lua-dao-qua-${rep.platform}-${Date.now()}`,
-      summary: `Hệ thống tiếp nhận phản ánh nghi vấn lừa đảo liên quan đến: ${rep.targetInfo}. Mô tả vụ việc: ${rep.description}`,
-      category: 'canh-bao-lua-dao',
-      categoryLabel: 'Cảnh báo lừa đảo',
-      thumbnail: rep.screenshotUrl || 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
-      author: 'Ban biên tập Lá Chắn Số',
-      date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
-      readTime: '3 phút đọc',
-      views: 0,
-      warningLevel: 'high',
-      sourceName: 'Phản ánh từ nhân dân',
-      quickSummaryPoints: [
-        `Phản ánh xảy ra trên nền tảng: ${rep.platform.toUpperCase()}`,
-        `Thông tin tài khoản/số điện thoại bị tố cáo: ${rep.targetInfo}`
-      ],
-      content: `<p>Ban biên tập Lá Chắn Số vừa tiếp nhận tin báo có mức độ xác thực cao từ người dân tại địa phương <strong>${rep.location}</strong> về thủ đoạn lừa đảo trực tuyến mới.</p><blockquote><strong>Chi tiết thông tin phản ánh:</strong><br/>${rep.description}</blockquote><p>Hiện nay cơ quan kỹ thuật đã đưa tài khoản/liên kết <code>${rep.targetInfo}</code> vào danh sách giám sát và hạn chế truy cập.</p>`
-    });
-    setSelectedReport(null);
-    setActiveTab('write');
-    showToast('Đã chuyển đổi báo cáo thành bản phác thảo bài viết.');
+  const handleConvertReportToPost = async (rep: ScamReport) => {
+    try {
+      const response = await api.post(`/api/admin/reports/${rep.id}/convert-to-article`, {});
+      if (response.success && response.article) {
+        const art = response.article;
+        setSelectedArticleToEdit({
+          id: art.id,
+          title: art.title,
+          slug: art.slug,
+          summary: art.summary,
+          content: art.content,
+          category: art.category?.slug || 'canh-bao-lua-dao',
+          categoryLabel: art.category?.name || 'Cảnh báo lừa đảo',
+          thumbnail: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
+          author: 'Ban biên tập Lá Chắn Số',
+          date: new Date(art.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          readTime: '3 phút đọc',
+          views: art.views || 0,
+          warningLevel: art.warningLevel || 'high',
+          sourceName: 'Phản ánh từ nhân dân',
+        });
+        await fetchReports();
+        await fetchArticles();
+        setSelectedReport(null);
+        setActiveTab('write');
+        showToast('Đã chuyển đổi báo cáo thành bản phác thảo bài viết nháp.');
+      } else {
+        showToast(response.message || 'Không thể chuyển đổi báo cáo.');
+      }
+    } catch (err: any) {
+      showToast(`Lỗi chuyển đổi: ${err.message}`);
+    }
   };
 
   // Add custom reference news source
-  const handleAddNewsSource = (e: React.FormEvent) => {
+  const handleAddNewsSource = async (e: React.FormEvent) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const newSrc: NewsSource = {
-      id: `src-added-${Date.now()}`,
-      name: fd.get('name') as string,
-      type: fd.get('type') as NewsSource['type'],
-      website: fd.get('website') as string,
-      description: fd.get('description') as string,
-      trustedStatus: 'verified'
-    };
-    saveSources([newSrc, ...newsSources]);
-    e.currentTarget.reset();
-    showToast('Thêm nguồn tin mới thành công.');
+    const name = fd.get('name') as string;
+    const type = fd.get('type') as string;
+    const website = fd.get('website') as string;
+    const description = fd.get('description') as string;
+
+    try {
+      const response = await api.post('/api/admin/sources', {
+        name,
+        type,
+        website,
+        description,
+        trustStatus: 'verified'
+      });
+      if (response.success) {
+        const sourcesRes = await api.get('/api/admin/sources');
+        if (sourcesRes.success) {
+          setNewsSources(sourcesRes.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            website: s.website || '',
+            description: s.description || '',
+            trustedStatus: s.trustStatus === 'verified' ? 'verified' : 'monitoring'
+          })));
+        }
+        e.currentTarget.reset();
+        showToast('Thêm nguồn tin mới thành công.');
+      }
+    } catch (err: any) {
+      showToast(`Lỗi thêm nguồn: ${err.message}`);
+    }
   };
+
 
   // Add mock admin account
   const handleAddAdminUser = (e: React.FormEvent) => {
@@ -352,6 +522,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                 { id: 'media', label: 'Thư Viện Tệp Tin', icon: FolderHeart },
                 { id: 'sources', label: 'Nguồn Tin Tức', icon: Globe },
                 { id: 'users', label: 'Tài Khoản & Quyền', icon: Users },
+                ...(adminUser?.role === 'super_admin' ? [{ id: 'audit', label: 'Nhật ký hoạt động', icon: Activity }] : []),
                 { id: 'settings', label: 'Cấu Hình Website', icon: Settings }
               ].map(item => {
                 const isSelected = activeTab === item.id;
@@ -912,18 +1083,54 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                   setSelectedArticleToEdit(null);
                   setActiveTab('posts');
                 }}
-                onSave={(compiled) => {
-                  const alreadyExists = articles.some(a => a.id === compiled.id);
-                  if (alreadyExists) {
-                    const updated = articles.map(a => a.id === compiled.id ? compiled : a);
-                    saveArticles(updated);
-                    showToast('Đã lưu bài viết chỉnh sửa thành công!');
-                  } else {
-                    saveArticles([compiled, ...articles]);
-                    showToast('Đã phát sóng bài viết mới ra trang chủ thành công!');
+                onSave={async (compiled) => {
+                  try {
+                    const cat = dbCategories.find(c => c.slug === compiled.category);
+                    const categoryId = cat ? cat.id : dbCategories[0]?.id;
+                    if (!categoryId) {
+                      showToast('Lỗi: Không tìm thấy chuyên mục tương ứng.');
+                      return;
+                    }
+
+                    const levelMap: Record<string, string> = {
+                      low: 'normal',
+                      medium: 'notice',
+                      high: 'warning',
+                      critical: 'urgent'
+                    };
+                    const mappedLevel = levelMap[compiled.warningLevel] || 'normal';
+
+                    const payload = {
+                      title: compiled.title,
+                      summary: compiled.summary,
+                      content: compiled.content || '',
+                      categoryId,
+                      warningLevel: mappedLevel,
+                      status: compiled.warningLevel === 'low' ? 'draft' : 'published',
+                      isFeatured: compiled.isHero || compiled.isSubHero || false,
+                      sourceUrl: compiled.sourceUrl || undefined,
+                      tags: ['an toàn số', 'lừa đảo', 'cảnh báo']
+                    };
+
+                    const isEdit = /^[0-9a-fA-F]{24}$/.test(compiled.id);
+                    let response;
+                    if (isEdit) {
+                      response = await api.patch(`/api/admin/articles/${compiled.id}`, payload);
+                    } else {
+                      response = await api.post('/api/admin/articles', payload);
+                    }
+
+                    if (response.success) {
+                      await fetchArticles();
+                      showToast(isEdit ? 'Đã lưu bài viết chỉnh sửa thành công!' : 'Đã phát sóng bài viết mới thành công!');
+                      setSelectedArticleToEdit(null);
+                      setActiveTab('posts');
+                    } else {
+                      showToast(response.message || 'Lỗi lưu bài viết.');
+                    }
+                  } catch (err: any) {
+                    showToast(`Lỗi: ${err.message}`);
                   }
-                  setSelectedArticleToEdit(null);
-                  setActiveTab('posts');
                 }}
               />
             )}
@@ -1236,7 +1443,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
             {activeTab === 'settings' && (
               <form onSubmit={(e) => {
                 e.preventDefault();
-                showToast('Đã lưu cấu hình hệ thống Lá Chắn Số thành công!');
+                saveSettings(webSettings);
               }} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
                 {/* Site details */}
@@ -1248,22 +1455,22 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Tên website</label>
-                      <input type="text" value={webSettings.siteName} onChange={(e) => setWebSettings({ ...webSettings, siteName: e.target.value })} className="w-full border rounded-xl px-3 py-2 font-bold" />
+                      <input type="text" value={webSettings.siteName} onChange={(e) => setWebSettings({ ...webSettings, siteName: e.target.value })} className="w-full border rounded-xl px-3 py-2 font-bold bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                     </div>
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Số hotline liên hệ khẩn</label>
-                      <input type="text" value={webSettings.contactPhone} onChange={(e) => setWebSettings({ ...webSettings, contactPhone: e.target.value })} className="w-full border rounded-xl px-3 py-2 font-mono" />
+                      <input type="text" value={webSettings.contactPhone} onChange={(e) => setWebSettings({ ...webSettings, contactPhone: e.target.value })} className="w-full border rounded-xl px-3 py-2 font-mono bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                     </div>
                   </div>
 
                   <div className="space-y-1 text-xs">
                     <label className="font-bold text-slate-400">Mô tả giới thiệu Footer</label>
-                    <textarea rows={3} value={webSettings.footerContent} onChange={(e) => setWebSettings({ ...webSettings, footerContent: e.target.value })} className="w-full border rounded-xl px-3 py-2 leading-relaxed" />
+                    <textarea rows={3} value={webSettings.footerContent} onChange={(e) => setWebSettings({ ...webSettings, footerContent: e.target.value })} className="w-full border rounded-xl px-3 py-2 leading-relaxed bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                   </div>
 
                   <div className="space-y-1 text-xs">
                     <label className="font-bold text-slate-400">Điều khoản miễn trừ trách nhiệm</label>
-                    <textarea rows={3} value={webSettings.disclaimer} onChange={(e) => setWebSettings({ ...webSettings, disclaimer: e.target.value })} className="w-full border rounded-xl px-3 py-2 leading-relaxed" />
+                    <textarea rows={3} value={webSettings.disclaimer} onChange={(e) => setWebSettings({ ...webSettings, disclaimer: e.target.value })} className="w-full border rounded-xl px-3 py-2 leading-relaxed bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                   </div>
                 </div>
 
@@ -1279,15 +1486,15 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                     <div className="space-y-3.5 text-xs">
                       <div className="space-y-1">
                         <label className="font-bold text-slate-400">Email quản trị</label>
-                        <input type="email" value={webSettings.contactEmail} onChange={(e) => setWebSettings({ ...webSettings, contactEmail: e.target.value })} className="w-full border rounded-xl px-3 py-1.5" />
+                        <input type="email" value={webSettings.contactEmail} onChange={(e) => setWebSettings({ ...webSettings, contactEmail: e.target.value })} className="w-full border rounded-xl px-3 py-1.5 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                       </div>
                       <div className="space-y-1">
                         <label className="font-bold text-slate-400">Facebook Page</label>
-                        <input type="text" value={webSettings.socialLinks.facebook} onChange={(e) => setWebSettings({ ...webSettings, socialLinks: { ...webSettings.socialLinks, facebook: e.target.value } })} className="w-full border rounded-xl px-3 py-1.5 font-mono" />
+                        <input type="text" value={webSettings.socialLinks.facebook} onChange={(e) => setWebSettings({ ...webSettings, socialLinks: { ...webSettings.socialLinks, facebook: e.target.value } })} className="w-full border rounded-xl px-3 py-1.5 font-mono bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                       </div>
                       <div className="space-y-1">
                         <label className="font-bold text-slate-400">Zalo OA</label>
-                        <input type="text" value={webSettings.socialLinks.zalo} onChange={(e) => setWebSettings({ ...webSettings, socialLinks: { ...webSettings.socialLinks, zalo: e.target.value } })} className="w-full border rounded-xl px-3 py-1.5 font-mono" />
+                        <input type="text" value={webSettings.socialLinks.zalo} onChange={(e) => setWebSettings({ ...webSettings, socialLinks: { ...webSettings.socialLinks, zalo: e.target.value } })} className="w-full border rounded-xl px-3 py-1.5 font-mono bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" />
                       </div>
                     </div>
 
@@ -1299,6 +1506,57 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                 </div>
 
               </form>
+            )}
+
+            {activeTab === 'audit' && (
+              <div className="space-y-6">
+                <div className={`p-5 rounded-2xl border shadow-sm ${
+                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                }`}>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider border-b pb-2 mb-4">Nhật ký hoạt động hệ thống</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className={`border-b text-[10px] uppercase font-extrabold tracking-wider ${
+                          darkMode ? 'bg-slate-950/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'
+                        }`}>
+                          <th className="py-3 px-4">Tài khoản</th>
+                          <th className="py-3 px-4">Hành động</th>
+                          <th className="py-3 px-4">Mã đối tượng</th>
+                          <th className="py-3 px-4">Thời gian xảy ra</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                        {auditLogs.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="text-center py-6 text-slate-400 font-semibold">
+                              Chưa có nhật ký hoạt động nào được ghi nhận.
+                            </td>
+                          </tr>
+                        ) : (
+                          auditLogs.map((log: any) => (
+                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition">
+                              <td className="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">
+                                {log.userName}
+                                <p className="text-[9px] text-slate-400 font-mono">{log.userEmail}</p>
+                              </td>
+                              <td className="py-3.5 px-4 font-semibold text-slate-600 dark:text-slate-300">
+                                {log.action}
+                              </td>
+                              <td className="py-3.5 px-4 font-mono text-slate-500">
+                                {log.targetId || 'Hệ thống'}
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-400 font-mono">
+                                {new Date(log.createdAt).toLocaleString('vi-VN')}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             )}
 
           </main>

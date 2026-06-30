@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { api } from './services/api';
 import { 
   ShieldAlert, 
   AlertTriangle, 
@@ -63,17 +64,9 @@ function AppContent() {
   const selectedCategory = isCategoryPage ? (location.pathname.split('/category/')[1] as Category) : '';
   const selectedArticleSlug = isArticlePage ? location.pathname.split('/article/')[1] : null;
   
-  // Dynamic synchronized articles state (loaded from localstorage or initialized with ARTICLES)
-  const [articles, setArticles] = useState<Article[]>(() => {
-    const saved = localStorage.getItem('lanchanso_articles');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    localStorage.setItem('lanchanso_articles', JSON.stringify(ARTICLES));
-    return ARTICLES;
-  });
+  // Dynamic synchronized articles state (loaded from backend API)
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Custom interactive data state synchronized with localStorage
   const [reports, setReports] = useState<ScamReport[]>(() => {
@@ -101,6 +94,50 @@ function AppContent() {
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  const fetchPublicArticles = async () => {
+    try {
+      setIsLoading(true);
+      const levelMap: Record<string, string> = {
+        normal: 'low',
+        notice: 'medium',
+        warning: 'high',
+        urgent: 'critical',
+        verified: 'critical'
+      };
+      const res = await api.get('/api/public/articles');
+      if (res.success) {
+        const mapped = res.data.map((art: any) => ({
+          id: art.id,
+          title: art.title,
+          slug: art.slug,
+          summary: art.summary,
+          content: art.content,
+          category: art.category?.slug || 'canh-bao-lua-dao',
+          categoryLabel: art.category?.name || 'Cảnh báo lừa đảo',
+          thumbnail: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
+          author: art.author?.name || 'Admin',
+          date: new Date(art.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          readTime: '3 phút đọc',
+          views: art.views || 0,
+          isHero: art.isFeatured || false,
+          isSubHero: false,
+          warningLevel: levelMap[art.warningLevel] || 'low',
+          sourceName: art.source?.name || 'Ban biên tập',
+          sourceUrl: art.sourceUrl || ''
+        }));
+        setArticles(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch public articles:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPublicArticles();
+  }, []);
+
   const handleAuthSuccess = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('lcs_current_user', JSON.stringify(user));
@@ -111,24 +148,48 @@ function AppContent() {
     localStorage.removeItem('lcs_current_user');
   };
 
-  // Handle new citizen report submission
-  const handleAddReport = (newReportData: Omit<ScamReport, 'id' | 'createdAt' | 'status' | 'likesCount' | 'commentsCount'>) => {
-    const randomTicket = 'LCS-' + Math.floor(100000 + Math.random() * 900000);
-    const freshReport: ScamReport = {
-      ...newReportData,
-      id: `rep-${reports.length + 1}`,
-      userId: currentUser?.uid,
-      ticketId: randomTicket,
-      statusMessage: 'Hệ thống đã tiếp nhận hồ sơ phản ánh. Đang chuyển tới bộ phận kỹ thuật để rà soát, đối chiếu cơ sở dữ liệu quốc gia về các cuộc gọi và website lừa đảo.',
-      createdAt: 'Vừa xong - Ngày hôm nay',
-      status: 'pending',
-      likesCount: 0,
-      commentsCount: 0
-    };
-    // Prepend to show immediately in the community feeds
-    const updated = [freshReport, ...reports];
-    setReports(updated);
-    localStorage.setItem('lanchanso_reports', JSON.stringify(updated));
+  // Handle new citizen report submission calling API
+  const handleAddReport = async (newReportData: Omit<ScamReport, 'id' | 'createdAt' | 'status' | 'likesCount' | 'commentsCount'>) => {
+    try {
+      const suspectPhone = newReportData.platform === 'sms' || newReportData.platform === 'call' ? newReportData.targetInfo : undefined;
+      const suspectUrl = newReportData.platform === 'website' ? newReportData.targetInfo : undefined;
+      const suspectAccount = newReportData.platform === 'facebook' || newReportData.platform === 'zalo' || newReportData.platform === 'tmdt' || newReportData.platform === 'other' ? newReportData.targetInfo : undefined;
+
+      const payload = {
+        reporterName: newReportData.reporterName || 'Cư dân ẩn danh',
+        contact: newReportData.reporterContact || 'Không có',
+        caseType: newReportData.scamType,
+        platform: newReportData.platform,
+        suspectPhone,
+        suspectUrl,
+        suspectAccount,
+        description: newReportData.description,
+        location: newReportData.location || 'Toàn quốc',
+        attachments: newReportData.screenshotUrl ? [newReportData.screenshotUrl] : []
+      };
+
+      const response = await api.post('/api/public/reports', payload);
+      if (response.success) {
+        alert('Gửi báo cáo lừa đảo thành công! Đội ngũ kỹ thuật sẽ thẩm định hồ sơ.');
+        const randomTicket = 'LCS-' + Math.floor(100000 + Math.random() * 900000);
+        const freshReport: ScamReport = {
+          ...newReportData,
+          id: response.data?.id || `rep-${Date.now()}`,
+          userId: currentUser?.uid,
+          ticketId: response.data?.ticketId || randomTicket,
+          statusMessage: 'Hệ thống đã tiếp nhận phản ánh và đang thẩm định hồ sơ.',
+          createdAt: 'Vừa xong - Ngày hôm nay',
+          status: 'pending',
+          likesCount: 0,
+          commentsCount: 0
+        };
+        setReports([freshReport, ...reports]);
+      } else {
+        alert(response.message || 'Lỗi gửi phản ánh.');
+      }
+    } catch (err: any) {
+      alert(`Lỗi kết nối máy chủ: ${err.message}`);
+    }
   };
 
   const handlePageChange = (page: string, categoryFilter?: Category | '') => {
@@ -174,16 +235,25 @@ function AppContent() {
 
   const filteredArticles = getFilteredArticles();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 font-bold font-sans">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+          <span className="text-xs uppercase tracking-wider">Đang tải thông tin Lá Chắn Số...</span>
+        </div>
+      </div>
+    );
+  }
+
   // Find featured articles for home page
   const heroArticle = articles.find(art => art.isHero) || articles[0];
-  const subHeroArticles = articles.filter(art => art.isSubHero && art.id !== heroArticle.id).slice(0, 2);
+  const subHeroArticles = heroArticle ? articles.filter(art => art.isSubHero && art.id !== heroArticle.id).slice(0, 2) : [];
   const popularArticles = [...articles].sort((a, b) => b.views - a.views).slice(0, 5);
   const warningArticles = articles.filter(art => art.category === 'canh-bao-lua-dao').slice(0, 4);
 
   // Find active reading article
   const currentArticle = articles.find(art => art.slug === selectedArticleSlug);
-
-
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans transition-all duration-300 text-sm">

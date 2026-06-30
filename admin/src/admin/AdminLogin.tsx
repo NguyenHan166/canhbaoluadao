@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { api } from '../services/api';
 
 interface AdminLoginProps {
   onLoginSuccess: (email: string) => void;
@@ -12,20 +13,25 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    // Simulate database check
-    setTimeout(() => {
-      if (email === 'nvhan166@gmail.com' && password === 'han1662003') {
-        onLoginSuccess(email);
+    try {
+      const response = await api.post('/api/auth/login', { email, password });
+      if (response.success && response.accessToken) {
+        localStorage.setItem('lcs_admin_token', response.accessToken);
+        localStorage.setItem('lcs_admin_refresh_token', response.refreshToken);
+        onLoginSuccess(response.user.email);
       } else {
-        setError('Tài khoản hoặc mật khẩu quản trị không chính xác.');
+        setError(response.message || 'Xác thực hệ thống không thành công.');
       }
+    } catch (err: any) {
+      setError(err.message || 'Không thể kết nối đến máy chủ.');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -60,7 +66,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
                 <div>
                   <span className="font-bold">Đăng nhập thất bại:</span> {error}
                   <div className="mt-1.5 text-[10px] text-rose-300/80 bg-rose-950/60 p-1.5 rounded border border-rose-900/30 font-mono">
-                    TK: nvhan166@gmail.com / MK: han1662003
+                    TK: nvhan166@gmail.com / MK: nvhan1662003
                   </div>
                 </div>
               </div>
