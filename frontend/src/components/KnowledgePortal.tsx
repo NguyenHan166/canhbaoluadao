@@ -1,9 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   ShieldCheck, 
@@ -15,6 +10,8 @@ import {
   CheckCircle 
 } from 'lucide-react';
 import { SAFETY_TIPS } from '../data/articles';
+import { api } from '../services/api';
+import { Handbook } from '../types';
 
 interface KnowledgePortalProps {
   fontSize?: 'normal' | 'large' | 'xlarge';
@@ -23,6 +20,24 @@ interface KnowledgePortalProps {
 export default function KnowledgePortal({ fontSize }: KnowledgePortalProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [downloadNotification, setDownloadNotification] = useState<string | null>(null);
+  const [guides, setGuides] = useState<Handbook[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchGuides = async () => {
+      try {
+        const res = await api.get('/api/public/handbooks');
+        if (res.success) {
+          setGuides(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch handbooks:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchGuides();
+  }, []);
 
   const categories = [
     { id: 'all', label: 'Tất cả cẩm nang', icon: <BookOpen className="w-4 h-4" /> },
@@ -33,91 +48,17 @@ export default function KnowledgePortal({ fontSize }: KnowledgePortalProps) {
     { id: 'seniors', label: 'Dành cho Người lớn tuổi', icon: <Users className="w-4 h-4" /> }
   ];
 
-  const guides = [
-    {
-      id: 'g-1',
-      category: 'account',
-      title: 'Hướng dẫn bảo vệ tài khoản định danh VNeID không bị cài mã độc',
-      summary: 'Kẻ xấu giả danh cơ quan đăng ký định danh gọi điện lừa đảo tải ứng dụng độc hại nhằm kiểm soát điện thoại. Hãy xem 3 bước bảo vệ.',
-      steps: [
-        'Không cài các tệp tin .apk từ liên kết được gửi qua tin nhắn chat.',
-        'Tuyệt đối không cấp quyền Trợ năng (Accessibility) cho ứng dụng lạ.',
-        'Thường xuyên kiểm tra danh sách ứng dụng đã cài đặt, gỡ ngay các ứng dụng lạ không có trên CH Play/App Store.'
-      ],
-      difficulty: 'Dễ thực hiện',
-      recommendFor: 'Tất cả mọi người'
-    },
-    {
-      id: 'g-2',
-      category: 'links',
-      title: 'Mẹo phát hiện tên miền mạo danh các Ngân hàng lớn',
-      summary: 'Bỏ túi quy tắc kiểm tra đuôi tên miền để phát hiện ngay các trang web phishing ăn cắp thông tin giao dịch.',
-      steps: [
-        'Đối chiếu tên miền thật: Các ngân hàng lớn sử dụng tên miền ngắn, chính quy như vietcombank.com.vn, techcombank.com.',
-        'Kẻ gian luôn chèn các chữ phụ: techcombank-uu-dai.com, vcb-login-quatang.cc, momo-nhanqua.site.',
-        'Sử dụng trình duyệt Chrome hoặc Safari chính chủ, luôn bật cảnh báo Google Safe Browsing.'
-      ],
-      difficulty: 'Trung bình',
-      recommendFor: 'Người mua sắm online'
-    },
-    {
-      id: 'g-3',
-      category: 'social',
-      title: 'Cách chặn tin nhắn rác, cuộc gọi dụ dỗ trên ứng dụng Zalo, Telegram',
-      summary: 'Hạn chế tối đa rủi ro bị tiếp cận bởi các tài khoản lừa đảo tuyển cộng tác viên, mời chào chứng khoán rác.',
-      steps: [
-        'Zalo: Vào Cài đặt > Quyền riêng tư > Chặn nhận tin nhắn từ người lạ, không nhận cuộc gọi từ người ngoài danh bạ.',
-        'Telegram: Vào Settings > Privacy and Security > Thiết lập "Who can see my phone number" thành Nobody và "Who can add me to groups" thành My Contacts.',
-        'Không click vào liên kết nhóm chat Telegram từ nguồn quảng cáo Facebook vô danh.'
-      ],
-      difficulty: 'Dễ thực hiện',
-      recommendFor: 'Mẹ bỉm sữa, Nhân viên văn phòng'
-    },
-    {
-      id: 'g-4',
-      category: 'payment',
-      title: '5 quy tắc chuyển tiền online an toàn 100%',
-      summary: 'Tránh chuyển khoản nhầm vào các tài khoản rác của các tổ chức cờ bạc hoặc tổ chức lừa đảo ẩn danh.',
-      steps: [
-        'Luôn nhìn kỹ tên người thụ hưởng trước khi ấn Xác nhận chuyển khoản.',
-        'Nghi ngờ ngay nếu người nhận là cá nhân khác với tên pháp nhân đơn vị bạn mua hàng.',
-        'Trước khi chuyển khoản cho người lạ, dùng tính năng "Kiểm tra nhanh" số tài khoản trên Lá Chắn Số.',
-        'Hạn mức giao dịch ngày nên để ở mức vừa phải để phòng ngừa rủi ro mất mát lớn.'
-      ],
-      difficulty: 'Dễ thực hiện',
-      recommendFor: 'Tiểu thương, Doanh nghiệp'
-    },
-    {
-      id: 'g-5',
-      category: 'seniors',
-      title: 'Cẩm nang an toàn số đặc biệt dành cho Ông Bà, Cha Mẹ lớn tuổi',
-      summary: 'Các kịch bản phòng ngừa lừa đảo qua điện thoại dễ hiểu nhất, biên soạn chữ to rõ ràng dành riêng cho người cao tuổi.',
-      steps: [
-        'Ghi nhớ quy tắc: Cảnh sát, Viện kiểm sát không làm việc qua điện thoại. Nếu nhận cuộc gọi tự xưng, lập tức cúp máy và báo cho con cháu.',
-        'Không tin lời mời nhận quà, trúng thưởng khủng qua mạng xã hội.',
-        'Nếu có người nhắn tin vay tiền khẩn cấp, nhất quyết phải gọi điện thoại sim di động nói chuyện trực tiếp mới chuyển khoản.'
-      ],
-      difficulty: 'Rất dễ',
-      recommendFor: 'Người cao tuổi (60+)'
-    },
-    {
-      id: 'g-6',
-      category: 'account',
-      title: 'Cách kích hoạt khóa bảo mật 2 lớp cho hòm thư Gmail cá nhân',
-      summary: 'Bảo vệ email cốt lõi - nơi lưu trữ liên kết phục hồi tất cả tài khoản ngân hàng và mạng xã hội quan trọng của bạn.',
-      steps: [
-        'Truy cập tài khoản Google > Bảo mật > Xác minh 2 bước.',
-        'Thiết lập phương thức khóa bằng ứng dụng Google Authenticator.',
-        'Tải về và in danh sách mã dự phòng (Backup Codes) cất vào ví an toàn đề phòng mất điện thoại.'
-      ],
-      difficulty: 'Trung bình',
-      recommendFor: 'Tất cả mọi người'
-    }
-  ];
-
   const filteredGuides = activeCategory === 'all' 
     ? guides 
     : guides.filter(g => g.category === activeCategory);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 font-sans space-y-8">

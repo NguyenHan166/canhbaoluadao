@@ -12,6 +12,7 @@ import reportsRouter from './modules/reports/reports.routes.js';
 import settingsRouter from './modules/settings/settings.routes.js';
 import analyticsRouter from './modules/analytics/analytics.routes.js';
 import auditLogsRouter from './modules/audit/audit.routes.js';
+import handbooksRouter from './modules/handbooks/handbooks.routes.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api', sourcesRouter);
 app.use('/api', articlesRouter);
 app.use('/api', reportsRouter);
 app.use('/api', settingsRouter);
+app.use('/api', handbooksRouter);
 app.use('/api/admin', mediaRouter);
 app.use('/api/admin', analyticsRouter);
 app.use('/api/admin', auditLogsRouter);

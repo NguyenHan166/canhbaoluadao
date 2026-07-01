@@ -59,6 +59,9 @@ model Article {
   author       User      @relation(fields: [authorId], references: [id])
   status       String // draft, review, published, hidden, archived
   isFeatured   Boolean   @default(false)
+  showOnHome   Boolean   @default(true)
+  isHero       Boolean   @default(false)
+  isSubHero    Boolean   @default(false)
   views        Int       @default(0)
   publishedAt  DateTime?
   createdAt    DateTime  @default(now())
@@ -146,5 +149,17 @@ model AuditLog {
   action     String
   targetId   String?
   createdAt  DateTime @default(now())
+}
+
+model Handbook {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  category     String
+  title        String
+  summary      String
+  steps        String[]
+  difficulty   String
+  recommendFor String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 

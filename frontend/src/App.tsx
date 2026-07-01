@@ -70,6 +70,7 @@ function AppContent() {
   
   // Dynamic synchronized articles state (loaded from backend API)
   const [articles, setArticles] = useState<Article[]>([]);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Custom interactive data state synchronized with localStorage
@@ -123,8 +124,9 @@ function AppContent() {
           date: new Date(art.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
           readTime: '3 phút đọc',
           views: art.views || 0,
-          isHero: art.isFeatured || false,
-          isSubHero: false,
+          isHero: art.isHero !== undefined ? art.isHero : (art.isFeatured || false),
+          isSubHero: art.isSubHero !== undefined ? art.isSubHero : false,
+          showOnHome: art.showOnHome !== undefined ? art.showOnHome : true,
           warningLevel: levelMap[art.warningLevel] || 'low',
           sourceName: art.source?.name || 'Ban biên tập',
           sourceUrl: art.sourceUrl || ''
@@ -138,8 +140,57 @@ function AppContent() {
     }
   };
 
+  const fetchPublicCategories = async () => {
+    try {
+      const res = await api.get('/api/public/categories');
+      if (res.success) {
+        setDbCategories(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch public categories:', err);
+    }
+  };
+
+  const fetchPublicReports = async () => {
+    try {
+      const res = await api.get('/api/public/reports');
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped = res.data.map((rep: any) => {
+          const targets = [];
+          if (rep.suspectPhone) targets.push(rep.suspectPhone);
+          if (rep.suspectUrl) targets.push(rep.suspectUrl);
+          if (rep.suspectAccount) targets.push(rep.suspectAccount);
+          const targetInfo = targets.join(' | ') || 'Không rõ';
+
+          return {
+            id: rep.id,
+            ticketId: `LCS-${rep.id.slice(-6).toUpperCase()}`,
+            statusMessage: rep.internalNote || 'Đã hoàn tất kiểm chứng và xác minh bởi Lá Chắn Số.',
+            reporterName: rep.reporterName || 'Cộng đồng đóng góp',
+            reporterContact: rep.contact || '',
+            scamType: rep.caseType || 'Chưa phân loại',
+            platform: rep.platform || 'other',
+            targetInfo: targetInfo,
+            description: rep.description,
+            location: rep.location || 'Toàn quốc',
+            screenshotUrl: rep.attachments?.[0] || '',
+            createdAt: new Date(rep.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            status: rep.status === 'verified' ? 'verified' : 'pending',
+            likesCount: Math.floor(Math.random() * 150) + 10,
+            commentsCount: Math.floor(Math.random() * 50) + 5
+          };
+        });
+        setReports(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch public reports:', err);
+    }
+  };
+
   useEffect(() => {
     fetchPublicArticles();
+    fetchPublicCategories();
+    fetchPublicReports();
   }, []);
 
   const handleAuthSuccess = (user: User) => {
@@ -251,10 +302,17 @@ function AppContent() {
   }
 
   // Find featured articles for home page
-  const heroArticle = articles.find(art => art.isHero) || articles[0];
-  const subHeroArticles = heroArticle ? articles.filter(art => art.id !== heroArticle.id).slice(0, 2) : [];
+  const homeArticles = articles.filter(art => art.showOnHome !== false);
+  const heroArticle = homeArticles.find(art => art.isHero) || homeArticles[0];
+  
+  let subHeroArticles = homeArticles.filter(art => art.isSubHero && art.id !== heroArticle?.id);
+  if (subHeroArticles.length < 2 && heroArticle) {
+    const filler = homeArticles.filter(art => !subHeroArticles.find(s => s.id === art.id) && art.id !== heroArticle.id).slice(0, 2 - subHeroArticles.length);
+    subHeroArticles = [...subHeroArticles, ...filler];
+  }
+  
   const popularArticles = [...articles].sort((a, b) => b.views - a.views).slice(0, 5);
-  const warningArticles = articles.filter(art => art.category === 'canh-bao-lua-dao').slice(0, 4);
+  const warningArticles = homeArticles.filter(art => art.category === 'canh-bao-lua-dao').slice(0, 4);
 
   // Find active reading article
   const currentArticle = articles.find(art => art.slug === selectedArticleSlug);
@@ -271,6 +329,7 @@ function AppContent() {
         currentUser={currentUser}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
+        categories={dbCategories}
       />
 
       {/* MAIN CONTAINER */}
@@ -353,70 +412,74 @@ function AppContent() {
 
             {/* A. STANDALONE ARCHIVE LIST FOR CATEGORIES OR SEARCH */}
             {(selectedCategory || searchQuery) && filteredArticles.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                {/* Archive List Column (Left 8 cols) */}
-                <div className="lg:col-span-8 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {filteredArticles.map((art) => (
-                      <div 
-                        key={art.id}
-                        onClick={() => {
-                          navigate(`/article/${art.slug}`);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="bg-white border border-slate-100/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 cursor-pointer flex flex-col justify-between"
-                      >
-                        <div>
-                          <img 
-                            src={art.thumbnail} 
-                            alt={art.title}
-                            className="w-full h-44 object-cover"
-                          />
-                          <div className="p-5 space-y-2">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-blue-700 uppercase">
-                              <span>{art.categoryLabel}</span>
-                              <span className="text-slate-400">{art.date}</span>
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  
+                  {/* Archive List Column (Left 8 cols) */}
+                  <div className="lg:col-span-8 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {filteredArticles.map((art) => (
+                        <div 
+                          key={art.id}
+                          onClick={() => {
+                            navigate(`/article/${art.slug}`);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="bg-white border border-slate-100/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 cursor-pointer flex flex-col justify-between"
+                        >
+                          <div>
+                            <img 
+                              src={art.thumbnail} 
+                              alt={art.title}
+                              className="w-full h-44 object-cover"
+                            />
+                            <div className="p-4 space-y-2">
+                              <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                                {art.categoryLabel}
+                              </span>
+                              <h3 className="font-extrabold text-[13px] text-slate-900 leading-snug line-clamp-2 hover:text-blue-700 transition">
+                                {art.title}
+                              </h3>
+                              <p className="text-[11px] text-slate-500 leading-normal line-clamp-3 text-justify">
+                                {art.summary}
+                              </p>
                             </div>
-                            <h3 className="font-extrabold text-sm sm:text-base text-slate-900 hover:text-blue-700 transition line-clamp-2">
-                              {art.title}
-                            </h3>
-                            <p className="text-xs text-slate-500 line-clamp-2 text-justify">
-                              {art.summary}
-                            </p>
+                          </div>
+                          
+                          <div className="p-4 pt-0 border-t border-slate-50/50 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                            <span>{art.date}</span>
+                            <span className="flex items-center gap-0.5 font-bold text-blue-600">Đọc thêm &rarr;</span>
                           </div>
                         </div>
-
-                        <div className="px-5 pb-4 pt-3 border-t border-slate-100/55 flex justify-between items-center text-[10px] text-slate-400">
-                          <span className="font-semibold text-slate-500">{art.author}</span>
-                          <span className="flex items-center gap-0.5 font-bold text-blue-600">Đọc thêm &rarr;</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Right widgets for archive */}
-                <div className="lg:col-span-4 space-y-6">
-                  <QuickChecker />
-                  
-                  {/* Community report panel widget */}
-                  <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
-                    <h4 className="font-extrabold text-xs text-rose-700 uppercase tracking-wider border-l-2 border-rose-600 pl-2">
-                      Hỗ trợ khẩn cấp 24/7
-                    </h4>
-                    <p className="text-xs text-slate-600 leading-normal text-justify">
-                      Nếu tài khoản của bạn đang có nguy cơ bị xâm nhập trái phép hoặc bạn đã trót chuyển tiền làm nhiệm vụ, hãy kích hoạt ngay Quy trình xử lý sự cố khẩn cấp.
-                    </p>
-                    <button 
-                      onClick={() => handlePageChange('report')}
-                      className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 rounded-lg transition text-center uppercase tracking-wide block"
-                    >
-                      Báo cáo vụ việc ngay
-                    </button>
+                  {/* Right widgets for archive */}
+                  <div className="lg:col-span-4 space-y-6">
+                    <QuickChecker />
+                    
+                    {/* Community report panel widget */}
+                    <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+                      <h4 className="font-extrabold text-xs text-rose-700 uppercase tracking-wider border-l-2 border-rose-600 pl-2">
+                        Hỗ trợ khẩn cấp 24/7
+                      </h4>
+                      <p className="text-xs text-slate-600 leading-normal text-justify">
+                        Nếu tài khoản của bạn đang có nguy cơ bị xâm nhập trái phép hoặc bạn đã trót chuyển tiền làm nhiệm vụ, hãy kích hoạt ngay Quy trình xử lý sự cố khẩn cấp.
+                      </p>
+                      <button 
+                        onClick={() => handlePageChange('report')}
+                        className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 rounded-lg transition text-center uppercase tracking-wide block"
+                      >
+                        Báo cáo vụ việc ngay
+                      </button>
+                    </div>
                   </div>
-                </div>
 
+                </div>
+                {selectedCategory === 'meo-huu-ich' && (
+                  <KnowledgePortal />
+                )}
               </div>
             ) : !selectedCategory && !searchQuery ? (
               
@@ -571,7 +634,7 @@ function AppContent() {
                   <CategorySection 
                     title="Cảnh báo lừa đảo" 
                     categorySlug="canh-bao-lua-dao" 
-                    articlesList={articles}
+                    articlesList={homeArticles}
                     onNavigate={(slug) => {
                       navigate(`/article/${slug}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -582,7 +645,7 @@ function AppContent() {
                   <CategorySection 
                     title="An ninh mạng" 
                     categorySlug="an-ninh-mang" 
-                    articlesList={articles}
+                    articlesList={homeArticles}
                     onNavigate={(slug) => {
                       navigate(`/article/${slug}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -593,7 +656,7 @@ function AppContent() {
                   <CategorySection 
                     title="Kiến thức số" 
                     categorySlug="kien-thuc" 
-                    articlesList={articles}
+                    articlesList={homeArticles}
                     onNavigate={(slug) => {
                       navigate(`/article/${slug}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -604,7 +667,7 @@ function AppContent() {
                   <CategorySection 
                     title="Kỹ năng & Mẹo" 
                     categorySlug="meo-huu-ich" 
-                    articlesList={articles}
+                    articlesList={homeArticles}
                     onNavigate={(slug) => {
                       navigate(`/article/${slug}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });

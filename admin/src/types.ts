@@ -3,12 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Category = 
-  | 'an-ninh-mang'
-  | 'canh-bao-lua-dao'
-  | 'kien-thuc'
-  | 'meo-huu-ich'
-  | 'cong-dong';
+export type Category = string;
 
 export interface Article {
   id: string;
@@ -25,6 +20,7 @@ export interface Article {
   views: number;
   isHero?: boolean;
   isSubHero?: boolean;
+  showOnHome?: boolean;
   warningLevel?: 'low' | 'medium' | 'high' | 'critical';
   status?: 'draft' | 'pending' | 'published' | 'hidden';
   sourceName?: string;
@@ -34,6 +30,18 @@ export interface Article {
   signs?: string[];
   prevention?: string[];
   whatToDoIfScammed?: string[];
+}
+
+export interface Handbook {
+  id: string;
+  category: string;
+  title: string;
+  summary: string;
+  steps: string[];
+  difficulty: string;
+  recommendFor: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ScamReport {

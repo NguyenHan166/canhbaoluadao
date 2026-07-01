@@ -301,3 +301,52 @@ export const convertToArticle = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+// 7. GET /api/public/reports - Get verified reports for public display
+export const getPublicReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, page = 1, limit = 10 } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.max(1, Number(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const whereClause: any = {
+      status: 'verified'
+    };
+
+    if (search) {
+      const searchStr = String(search);
+      whereClause.OR = [
+        { caseType: { contains: searchStr, mode: 'insensitive' } },
+        { platform: { contains: searchStr, mode: 'insensitive' } },
+        { description: { contains: searchStr, mode: 'insensitive' } },
+        { suspectPhone: { contains: searchStr, mode: 'insensitive' } },
+        { suspectUrl: { contains: searchStr, mode: 'insensitive' } },
+        { suspectAccount: { contains: searchStr, mode: 'insensitive' } }
+      ];
+    }
+
+    const [total, reports] = await Promise.all([
+      prisma.scamReport.count({ where: whereClause }),
+      prisma.scamReport.findMany({
+        where: whereClause,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: reports,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

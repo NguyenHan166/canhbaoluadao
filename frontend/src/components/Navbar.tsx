@@ -29,6 +29,7 @@ interface NavbarProps {
   currentUser: User | null;
   onOpenLogin: () => void;
   onLogout: () => void;
+  categories?: any[];
 }
 
 export default function Navbar({
@@ -38,7 +39,8 @@ export default function Navbar({
   onSearch,
   currentUser,
   onOpenLogin,
-  onLogout
+  onLogout,
+  categories = []
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -60,14 +62,24 @@ export default function Navbar({
     }
   };
 
+  const defaultCategories = [
+    { name: 'Cảnh báo lừa đảo', slug: 'canh-bao-lua-dao' },
+    { name: 'An ninh mạng', slug: 'an-ninh-mang' },
+    { name: 'Kiến thức số', slug: 'kien-thuc' },
+    { name: 'Kỹ năng & Mẹo', slug: 'meo-huu-ich' }
+  ];
+
+  const displayCategories = categories && categories.length > 0 ? categories : defaultCategories;
+
   const navItems = [
-    { label: 'Trang chủ', page: 'home', category: '' as const },
-    { label: 'Cảnh báo lừa đảo', page: 'home', category: 'canh-bao-lua-dao' as const },
-    { label: 'An ninh mạng', page: 'home', category: 'an-ninh-mang' as const },
-    { label: 'Kiến thức số', page: 'home', category: 'kien-thuc' as const },
-    { label: 'Kỹ năng & Mẹo', page: 'home', category: 'meo-huu-ich' as const },
-    { label: 'Báo cáo nghi vấn', page: 'report', category: '' as const },
-    { label: 'Cộng đồng', page: 'dashboard', category: '' as const },
+    { label: 'Trang chủ', page: 'home', category: '' },
+    ...displayCategories.filter(c => c.isVisible !== false).map(c => ({
+      label: c.name,
+      page: 'home',
+      category: c.slug
+    })),
+    { label: 'Báo cáo nghi vấn', page: 'report', category: '' },
+    { label: 'Cộng đồng', page: 'dashboard', category: '' },
   ];
 
   return (
@@ -249,24 +261,6 @@ export default function Navbar({
           </ul>
         </div>
       </nav>
-
-      {/* BREAKING ALERT STRIP */}
-      <div className="w-full bg-red-50 h-10 flex items-center px-4 gap-3 border-b border-red-100">
-        <div className="max-w-7xl mx-auto w-full flex items-center gap-3">
-          <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded italic whitespace-nowrap">
-            CẢNH BÁO KHẨN
-          </span>
-          <div className="flex-1 text-xs text-red-700 font-semibold truncate">
-            Cảnh báo: Thủ đoạn giả danh công an gọi điện yêu cầu cài đặt ứng dụng "Dịch vụ công" giả mạo nhằm chiếm đoạt tài sản tại TP.HCM...
-          </div>
-          <button 
-            onClick={() => onPageChange('home', 'canh-bao-lua-dao')}
-            className="text-xs font-bold text-red-600 hover:underline"
-          >
-            Xem tất cả
-          </button>
-        </div>
-      </div>
 
       {/* 4. MOBILE DRAWER NAVIGATION */}
       {isMobileMenuOpen && (

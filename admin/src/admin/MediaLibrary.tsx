@@ -71,7 +71,7 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
       if (filesRes.success) {
         const mappedFiles = filesRes.data.map((f: any) => ({
           id: f.id,
-          name: f.originalName,
+          name: f.originalName || f.name || f.storedName || 'Không tên',
           url: f.url,
           type: f.mimeType?.startsWith('image/') ? 'image' : f.mimeType?.includes('pdf') ? 'pdf' : 'docx',
           size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
@@ -191,7 +191,7 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
   // Filtered files in current folder
   const currentFiles = files.filter(f => {
     const matchesFolder = f.folder === currentFolderId;
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = (f.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (f.altText && f.altText.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesFolder && matchesSearch;
   });

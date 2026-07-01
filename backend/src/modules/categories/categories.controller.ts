@@ -131,6 +131,15 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
       });
     }
 
+    // Prevent deletion of system core categories
+    const protectedSlugs = ['canh-bao-lua-dao', 'an-ninh-mang', 'cong-dong'];
+    if (protectedSlugs.includes(category.slug)) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể xóa chuyên mục hệ thống mặc định: "${category.name}".`,
+      });
+    }
+
     // Check if category has articles
     const articleCount = await prisma.article.count({
       where: { categoryId: id },

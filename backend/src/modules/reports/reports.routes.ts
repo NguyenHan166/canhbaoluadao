@@ -7,6 +7,7 @@ import {
   updateReportStatus,
   updateReportRiskLevel,
   convertToArticle,
+  getPublicReports,
 } from './reports.controller.js';
 import { requireAuth, requireRoles } from '../../middlewares/auth.js';
 import { validateRequest } from '../../middlewares/validate.js';
@@ -47,8 +48,9 @@ const validateRiskLevel = [
   validateRequest,
 ];
 
-// Public submission
+// Public submission & fetch
 router.post('/public/reports', validateReport, createReport);
+router.get('/public/reports', getPublicReports);
 
 // Admin endpoints (super_admin or report_manager)
 router.get(

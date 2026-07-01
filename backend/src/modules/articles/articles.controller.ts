@@ -245,7 +245,10 @@ export const createArticle = async (req: Request, res: Response, next: NextFunct
       sourceId,
       sourceUrl,
       status = 'draft',
-      isFeatured = false
+      isFeatured = false,
+      showOnHome = true,
+      isHero = false,
+      isSubHero = false
     } = req.body;
 
     // Check category exists
@@ -291,7 +294,10 @@ export const createArticle = async (req: Request, res: Response, next: NextFunct
         sourceId: sourceId || null,
         sourceUrl: sourceUrl || null,
         status,
-        isFeatured: Boolean(isFeatured),
+        isFeatured: Boolean(isFeatured || isHero || isSubHero),
+        showOnHome: showOnHome !== undefined ? Boolean(showOnHome) : true,
+        isHero: Boolean(isHero),
+        isSubHero: Boolean(isSubHero),
         authorId: req.user!.id,
         publishedAt
       },
@@ -327,7 +333,10 @@ export const updateArticle = async (req: Request, res: Response, next: NextFunct
       sourceId,
       sourceUrl,
       status,
-      isFeatured
+      isFeatured,
+      showOnHome,
+      isHero,
+      isSubHero
     } = req.body;
 
     const existingArticle = await prisma.article.findUnique({
@@ -398,7 +407,10 @@ export const updateArticle = async (req: Request, res: Response, next: NextFunct
         sourceId: sourceId !== undefined ? (sourceId || null) : undefined,
         sourceUrl: sourceUrl !== undefined ? (sourceUrl || null) : undefined,
         status,
-        isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : undefined,
+        isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : (isHero !== undefined || isSubHero !== undefined) ? Boolean(isHero || isSubHero) : undefined,
+        showOnHome: showOnHome !== undefined ? Boolean(showOnHome) : undefined,
+        isHero: isHero !== undefined ? Boolean(isHero) : undefined,
+        isSubHero: isSubHero !== undefined ? Boolean(isSubHero) : undefined,
         publishedAt
       },
       include: {

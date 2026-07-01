@@ -5,9 +5,9 @@ import {
   User, CheckSquare, Eye, Edit3, Copy, Trash2, ArrowRight, CornerDownRight,
   TrendingUp, Activity, MessageSquare, ShieldCheck, HelpCircle, Phone, Mail,
   AlertTriangle, Filter, CheckCircle2, ChevronRight, X, Download, FileSpreadsheet,
-  Link as LinkIcon, RefreshCw, Layers
+  Link as LinkIcon, RefreshCw, Layers, BookOpen
 } from 'lucide-react';
-import { Article, Category, ScamReport } from '../types';
+import { Article, Category, ScamReport, Handbook } from '../types';
 import { 
   NewsSource, AdminUser, WebsiteSettings,
   INITIAL_NEWS_SOURCES, INITIAL_ADMIN_USERS, INITIAL_WEBSITE_SETTINGS 
@@ -66,6 +66,18 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   // Selected article for editing
   const [selectedArticleToEdit, setSelectedArticleToEdit] = useState<Article | null>(null);
 
+  const [handbooks, setHandbooks] = useState<Handbook[]>([]);
+  const [selectedHandbookToEdit, setSelectedHandbookToEdit] = useState<Handbook | null>(null);
+  const [selectedCategoryToEdit, setSelectedCategoryToEdit] = useState<any | null>(null);
+  const [catName, setCatName] = useState('');
+  const [catSlug, setCatSlug] = useState('');
+  const [catDesc, setCatDesc] = useState('');
+  const [catParentId, setCatParentId] = useState('');
+  const [catIcon, setCatIcon] = useState('Shield');
+  const [catColor, setCatColor] = useState('');
+  const [catSortOrder, setCatSortOrder] = useState(0);
+  const [catIsVisible, setCatIsVisible] = useState(true);
+
   // Filters for Articles Table
   const [artFilterSearch, setArtFilterSearch] = useState('');
   const [artFilterCategory, setArtFilterCategory] = useState<Category | ''>('');
@@ -89,13 +101,28 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Categories list
-  const categoriesList = [
-    { id: 'canh-bao-lua-dao' as Category, label: 'Cảnh báo lừa đảo', description: 'Các thủ đoạn, kịch bản, và dấu hiệu lừa đảo trực tuyến.', color: 'border-l-rose-600 bg-rose-50/10 text-rose-700', count: articles.filter(a => a.category === 'canh-bao-lua-dao').length },
-    { id: 'an-ninh-mang' as Category, label: 'An ninh mạng', description: 'Tin bảo mật quốc tế, sự cố lộ lọt dữ liệu.', color: 'border-l-blue-600 bg-blue-50/10 text-blue-700', count: articles.filter(a => a.category === 'an-ninh-mang').length },
-    { id: 'kien-thuc' as Category, label: 'Kiến thức an toàn số', description: 'Khái niệm, thuật ngữ an toàn thông tin cơ bản.', color: 'border-l-teal-600 bg-teal-50/10 text-teal-700', count: articles.filter(a => a.category === 'kien-thuc').length },
-    { id: 'meo-huu-ich' as Category, label: 'Kỹ năng & Mẹo', description: 'Hướng dẫn cài đặt bảo mật thiết bị an toàn.', color: 'border-l-emerald-600 bg-emerald-50/10 text-emerald-700', count: articles.filter(a => a.category === 'meo-huu-ich').length },
-    { id: 'cong-dong' as Category, label: 'Báo cáo cộng đồng', description: 'Ý kiến đóng góp từ nhân dân.', color: 'border-l-indigo-600 bg-indigo-50/10 text-indigo-700', count: articles.filter(a => a.category === 'cong-dong').length }
-  ];
+  const categoriesList = dbCategories.map(cat => {
+    let borderStyle = 'border-l-blue-600 bg-blue-50/10 text-blue-700';
+    if (cat.slug === 'canh-bao-lua-dao') borderStyle = 'border-l-rose-600 bg-rose-50/10 text-rose-700';
+    else if (cat.slug === 'an-ninh-mang') borderStyle = 'border-l-blue-600 bg-blue-50/10 text-blue-700';
+    else if (cat.slug === 'kien-thuc') borderStyle = 'border-l-teal-600 bg-teal-50/10 text-teal-700';
+    else if (cat.slug === 'meo-huu-ich') borderStyle = 'border-l-emerald-600 bg-emerald-50/10 text-emerald-700';
+    else if (cat.slug === 'cong-dong') borderStyle = 'border-l-indigo-600 bg-indigo-50/10 text-indigo-700';
+
+    return {
+      id: cat.slug as Category,
+      label: cat.name,
+      description: cat.description || '',
+      color: borderStyle,
+      count: articles.filter(a => a.category === cat.slug).length,
+      dbId: cat.id,
+      parentId: cat.parentId || '',
+      icon: cat.icon || 'Shield',
+      sortOrder: cat.sortOrder || 0,
+      isVisible: cat.isVisible !== undefined ? cat.isVisible : true,
+      original: cat
+    };
+  });
 
   const fetchReports = async () => {
     try {
@@ -152,9 +179,34 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
           warningLevel: levelMapRev[art.warningLevel] || 'high',
           status: art.status || 'published',
           sourceName: art.source?.name || 'Ban biên tập',
-          sourceUrl: art.sourceUrl || ''
+          sourceUrl: art.sourceUrl || '',
+          isHero: art.isHero !== undefined ? art.isHero : (art.isFeatured || false),
+          isSubHero: art.isSubHero !== undefined ? art.isSubHero : false,
+          showOnHome: art.showOnHome !== undefined ? art.showOnHome : true
         }));
         setArticles(mappedArticles);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchHandbooks = async () => {
+    try {
+      const res = await api.get('/api/admin/handbooks');
+      if (res.success) {
+        setHandbooks(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get('/api/public/categories');
+      if (res.success) {
+        setDbCategories(res.data);
       }
     } catch (e) {
       console.error(e);
@@ -177,6 +229,28 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   }, [darkMode]);
 
   useEffect(() => {
+    if (selectedCategoryToEdit) {
+      setCatName(selectedCategoryToEdit.name || '');
+      setCatSlug(selectedCategoryToEdit.slug || '');
+      setCatDesc(selectedCategoryToEdit.description || '');
+      setCatParentId(selectedCategoryToEdit.parentId || '');
+      setCatIcon(selectedCategoryToEdit.icon || 'Shield');
+      setCatColor(selectedCategoryToEdit.color || '');
+      setCatSortOrder(selectedCategoryToEdit.sortOrder || 0);
+      setCatIsVisible(selectedCategoryToEdit.isVisible !== undefined ? selectedCategoryToEdit.isVisible : true);
+    } else {
+      setCatName('');
+      setCatSlug('');
+      setCatDesc('');
+      setCatParentId('');
+      setCatIcon('Shield');
+      setCatColor('');
+      setCatSortOrder(0);
+      setCatIsVisible(true);
+    }
+  }, [selectedCategoryToEdit]);
+
+  useEffect(() => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
     }
@@ -193,13 +267,11 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
         setAdminUser(profile.user);
 
         // Fetch categories first so we can map them
-        const categoriesRes = await api.get('/api/public/categories');
-        if (categoriesRes.success) {
-          setDbCategories(categoriesRes.data);
-        }
+        await fetchCategories();
 
         await fetchArticles();
         await fetchReports();
+        await fetchHandbooks();
 
         const settingsRes = await api.get('/api/public/settings');
         if (settingsRes.success) {
@@ -329,40 +401,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
     }
   };
 
-  // Import mock article from Cục ATTT website
-  const handleImportFromSource = () => {
-    const titles = [
-      'CẢNH BÁO: Xuất hiện trang web giả mạo Ngân hàng Vietcombank để đánh cắp mã OTP kích hoạt Smart OTP',
-      'Cảnh giác tin nhắn SMS chứa liên kết lạ thông báo nhận quà tri ân từ thương hiệu thời trang lớn',
-      'Phát hiện chiến dịch tán phát mã độc gián điệp qua file tài liệu đính kèm Excel độc hại hòng chiếm đoạt dữ liệu máy tính'
-    ];
-    const summaries = [
-      'Kẻ gian lợi dụng giao diện giống 99% website ngân hàng Vietcombank thật để lừa người dùng nhập tài khoản, mật khẩu rồi kích hoạt OTP từ xa.',
-      'Đại diện thương hiệu đưa ra cảnh báo chính thức rằng họ không tổ chức chương trình trúng thưởng qua tin nhắn SMS rác.',
-      'Chuyên gia NCSC phát hiện chiến dịch APT tinh vi nhắm vào các doanh nghiệp vừa và nhỏ Việt Nam.'
-    ];
-    
-    const index = Math.floor(Math.random() * titles.length);
-    const mockImport: Article = {
-      id: `art-imp-${Date.now()}`,
-      title: titles[index],
-      slug: `tin-nhap-tu-nguon-${Date.now()}`,
-      summary: summaries[index],
-      category: 'an-ninh-mang',
-      categoryLabel: 'An ninh mạng',
-      thumbnail: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
-      author: 'Hệ thống nhập tự động',
-      date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
-      readTime: '4 phút đọc',
-      views: 1,
-      warningLevel: 'high',
-      sourceName: 'Cục An toàn thông tin - Bộ TT&TT',
-      sourceUrl: 'https://ais.gov.vn'
-    };
 
-    saveArticles([mockImport, ...articles]);
-    showToast('Đã nhập bài viết từ nguồn thành công.');
-  };
 
   // Export list toast
   const handleExportList = () => {
@@ -526,6 +565,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                 { id: 'posts', label: 'Bài Viết Bảo Mật', icon: FileText },
                 { id: 'write', label: 'Soạn Thảo Bài Mới', icon: PlusCircle, count: articles.filter(a => a.warningLevel === 'low').length ? 'Drafts' : undefined },
                 { id: 'categories', label: 'Chuyên Mục', icon: Layers },
+                { id: 'handbooks', label: 'Cẩm Nang An Toàn', icon: BookOpen },
                 { id: 'reports', label: 'Phản Ánh Dân Gửi', icon: ShieldAlert, count: reports.filter(r => r.status === 'pending').length },
                 { id: 'media', label: 'Thư Viện Tệp Tin', icon: FolderHeart },
                 { id: 'sources', label: 'Nguồn Tin Tức', icon: Globe },
@@ -890,11 +930,15 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                     </button>
 
                     <button
-                      onClick={handleImportFromSource}
+                      onClick={async () => {
+                        await fetchArticles();
+                        showToast('Đã làm mới danh sách bài viết.');
+                      }}
                       className="px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-1.5"
+                      title="Làm mới danh sách"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Nhập bài từ nguồn</span>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin-hover" />
+                      <span>Làm mới</span>
                     </button>
 
                     <button
@@ -1116,6 +1160,9 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                       warningLevel: mappedLevel,
                       status: compiled.status || 'published',
                       isFeatured: compiled.isHero || compiled.isSubHero || false,
+                      showOnHome: compiled.showOnHome !== undefined ? compiled.showOnHome : true,
+                      isHero: compiled.isHero || false,
+                      isSubHero: compiled.isSubHero || false,
                       sourceUrl: compiled.sourceUrl || undefined,
                       coverImageUrl: compiled.thumbnail || undefined,
                       tags: ['an toàn số', 'lừa đảo', 'cảnh báo']
@@ -1150,62 +1197,452 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
             {activeTab === 'categories' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
-                {/* Form to create Category */}
+                {/* Form to create/edit Category */}
                 <div className={`lg:col-span-4 p-5 rounded-2xl border shadow-sm space-y-4 ${
-                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                  darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-100 text-slate-800'
                 }`}>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider border-b pb-2">Thêm chuyên mục</h3>
-                  <form onSubmit={(e) => {
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider">
+                      {selectedCategoryToEdit ? 'Chỉnh sửa chuyên mục' : 'Thêm chuyên mục'}
+                    </h3>
+                    {selectedCategoryToEdit && (
+                      <button 
+                        onClick={() => setSelectedCategoryToEdit(null)}
+                        className="text-[10px] text-red-500 hover:underline font-bold"
+                      >
+                        Hủy sửa
+                      </button>
+                    )}
+                  </div>
+                  
+                  <form onSubmit={async (e) => {
                     e.preventDefault();
-                    showToast('Đã lưu chuyên mục mới thành công.');
+                    const payload = {
+                      name: catName,
+                      description: catDesc,
+                      parentId: catParentId || null,
+                      icon: catIcon,
+                      color: catColor || undefined,
+                      sortOrder: Number(catSortOrder),
+                      isVisible: catIsVisible
+                    };
+                    
+                    try {
+                      let res;
+                      if (selectedCategoryToEdit) {
+                        res = await api.patch(`/api/admin/categories/${selectedCategoryToEdit.id}`, payload);
+                      } else {
+                        res = await api.post('/api/admin/categories', payload);
+                      }
+
+                      if (res.success) {
+                        showToast(selectedCategoryToEdit ? 'Cập nhật chuyên mục thành công!' : 'Thêm chuyên mục mới thành công!');
+                        setSelectedCategoryToEdit(null);
+                        setCatName('');
+                        setCatSlug('');
+                        setCatDesc('');
+                        setCatParentId('');
+                        setCatIcon('Shield');
+                        setCatColor('');
+                        setCatSortOrder(0);
+                        setCatIsVisible(true);
+                        await fetchCategories();
+                      } else {
+                        showToast(res.message || 'Lỗi khi lưu chuyên mục.');
+                      }
+                    } catch (err: any) {
+                      showToast(`Lỗi: ${err.message}`);
+                    }
                   }} className="space-y-4 text-xs">
+                    
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Tên chuyên mục</label>
-                      <input type="text" placeholder="VD: Bảo mật cá nhân" className="w-full border rounded-xl px-3 py-2" required />
+                      <input 
+                        type="text" 
+                        value={catName}
+                        onChange={(e) => setCatName(e.target.value)}
+                        placeholder="VD: Bảo mật cá nhân" 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                        required 
+                      />
                     </div>
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-400">Slug</label>
-                      <input type="text" placeholder="bao-mat-ca-nhan" className="w-full border rounded-xl px-3 py-2 font-mono" />
-                    </div>
+                    
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Mô tả ngắn</label>
-                      <textarea rows={2} placeholder="Tin tức, mẹo thiết lập mật khẩu an toàn..." className="w-full border rounded-xl px-3 py-2" />
+                      <textarea 
+                        rows={2} 
+                        value={catDesc}
+                        onChange={(e) => setCatDesc(e.target.value)}
+                        placeholder="Tin tức, mẹo thiết lập mật khẩu an toàn..." 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                      />
                     </div>
+                    
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Chuyên mục cha</label>
-                      <select className="w-full border rounded-xl px-3 py-2 bg-white">
+                      <select 
+                        value={catParentId}
+                        onChange={(e) => setCatParentId(e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800"
+                      >
                         <option value="">Không có</option>
-                        {categoriesList.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                        {categoriesList
+                          .filter(c => !selectedCategoryToEdit || c.dbId !== selectedCategoryToEdit.id)
+                          .map(c => (
+                            <option key={c.dbId} value={c.dbId}>{c.label}</option>
+                          ))
+                        }
                       </select>
                     </div>
+                    
                     <div className="space-y-1">
                       <label className="font-bold text-slate-400">Icon đại diện (Tên Lucide)</label>
-                      <input type="text" placeholder="Shield" className="w-full border rounded-xl px-3 py-2" />
+                      <input 
+                        type="text" 
+                        value={catIcon}
+                        onChange={(e) => setCatIcon(e.target.value)}
+                        placeholder="Shield" 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                      />
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-400">Thứ tự sắp xếp</label>
+                      <input 
+                        type="number" 
+                        min={0}
+                        value={catSortOrder}
+                        onChange={(e) => setCatSortOrder(Number(e.target.value))}
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 py-1">
+                      <input 
+                        type="checkbox" 
+                        id="catIsVisible"
+                        checked={catIsVisible}
+                        onChange={(e) => setCatIsVisible(e.target.checked)}
+                        className="rounded text-blue-900 focus:ring-blue-900 h-4 w-4"
+                      />
+                      <label htmlFor="catIsVisible" className="font-bold text-slate-400 cursor-pointer selection:bg-transparent">
+                        Hiển thị chuyên mục này trên cổng thông tin
+                      </label>
+                    </div>
+
                     <button type="submit" className="w-full py-2 bg-blue-900 text-white font-bold rounded-xl hover:bg-blue-850 transition shadow-sm">
-                      LƯU CHUYÊN MỤC
+                      {selectedCategoryToEdit ? 'CẬP NHẬT CHUYÊN MỤC' : 'LƯU CHUYÊN MỤC'}
                     </button>
                   </form>
                 </div>
 
                 {/* Categories table */}
                 <div className={`lg:col-span-8 p-5 rounded-2xl border shadow-sm space-y-4 ${
-                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                  darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-100 text-slate-800'
                 }`}>
                   <h3 className="text-xs font-extrabold uppercase tracking-wider border-b pb-2">Các chuyên mục hiện có</h3>
                   <div className="space-y-2.5">
-                    {categoriesList.map(c => (
-                      <div key={c.id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-950/20 transition">
-                        <div className="space-y-1 max-w-[80%]">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-white text-xs">{c.label}</span>
-                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-bold px-2 py-0.5 rounded font-mono">{c.id}</span>
+                    {categoriesList.length === 0 ? (
+                      <div className="text-center py-6 text-slate-500 text-xs font-semibold">Chưa có chuyên mục nào trong cơ sở dữ liệu.</div>
+                    ) : (
+                      categoriesList.map(c => (
+                        <div key={c.dbId} className="p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-950/20 transition">
+                          <div className="space-y-1 max-w-[70%] text-slate-850 dark:text-slate-200">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-900 dark:text-white text-xs">{c.label}</span>
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-bold px-2 py-0.5 rounded font-mono">{c.id}</span>
+                              {!c.isVisible && (
+                                <span className="bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Đang ẩn</span>
+                              )}
+                              {c.parentId && (
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold px-1.5 py-0.5 rounded">Cha: {categoriesList.find(pc => pc.dbId === c.parentId)?.label || c.parentId}</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-relaxed text-justify">{c.description || 'Không có mô tả.'}</p>
                           </div>
-                          <p className="text-[11px] text-slate-500 leading-relaxed text-justify">{c.description}</p>
+                          
+                          <div className="flex items-center gap-3">
+                            <span className="bg-blue-900 text-white font-bold text-[10px] px-2.5 py-1 rounded-full">{c.count} bài</span>
+                            
+                            <div className="flex items-center gap-1.5">
+                              <button 
+                                onClick={() => setSelectedCategoryToEdit(c.original)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition"
+                                title="Sửa chuyên mục"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              
+                              {(() => {
+                                const isSystemCategory = ['canh-bao-lua-dao', 'an-ninh-mang', 'cong-dong'].includes(c.id);
+                                return (
+                                  <button 
+                                    onClick={async () => {
+                                      if (isSystemCategory) {
+                                        showToast(`Chuyên mục "${c.label}" là mặc định của hệ thống, không thể xóa.`);
+                                        return;
+                                      }
+                                      if (window.confirm(`Bạn có chắc chắn muốn xóa chuyên mục "${c.label}"?`)) {
+                                        try {
+                                          const res = await api.delete(`/api/admin/categories/${c.dbId}`);
+                                          if (res.success) {
+                                            showToast('Xóa chuyên mục thành công.');
+                                            if (selectedCategoryToEdit?.id === c.dbId) {
+                                              setSelectedCategoryToEdit(null);
+                                            }
+                                            await fetchCategories();
+                                          } else {
+                                            showToast(res.message || 'Lỗi khi xóa chuyên mục.');
+                                          }
+                                        } catch (err: any) {
+                                          showToast(`Lỗi: ${err.message}`);
+                                        }
+                                      }
+                                    }}
+                                    className={`p-1.5 rounded-lg transition ${
+                                      isSystemCategory 
+                                        ? 'text-slate-350 dark:text-slate-700 cursor-not-allowed opacity-40' 
+                                        : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
+                                    }`}
+                                    title={isSystemCategory ? 'Không thể xóa chuyên mục mặc định của hệ thống' : 'Xóa chuyên mục'}
+                                    disabled={isSystemCategory}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                );
+                              })()}
+                            </div>
+                          </div>
                         </div>
-                        <span className="bg-blue-900 text-white font-bold text-[10px] px-2.5 py-1 rounded-full">{c.count} bài</span>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* =========================================
+                TAB 10: MANAGE HANDBOOKS
+                ========================================= */}
+            {activeTab === 'handbooks' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Form to create/edit Handbook */}
+                <div className={`lg:col-span-5 p-5 rounded-2xl border shadow-sm space-y-4 ${
+                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                }`}>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider border-b pb-2">
+                    {selectedHandbookToEdit ? 'Chỉnh sửa cẩm nang' : 'Thêm cẩm nang mới'}
+                  </h3>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    const stepsText = fd.get('steps') as string;
+                    const steps = stepsText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                    
+                    const payload = {
+                      category: fd.get('category') as string,
+                      title: fd.get('title') as string,
+                      summary: fd.get('summary') as string,
+                      steps,
+                      difficulty: fd.get('difficulty') as string,
+                      recommendFor: fd.get('recommendFor') as string,
+                    };
+
+                    try {
+                      let res;
+                      if (selectedHandbookToEdit) {
+                        res = await api.patch(`/api/admin/handbooks/${selectedHandbookToEdit.id}`, payload);
+                      } else {
+                        res = await api.post('/api/admin/handbooks', payload);
+                      }
+
+                      if (res.success) {
+                        showToast(selectedHandbookToEdit ? 'Cập nhật cẩm nang thành công!' : 'Thêm cẩm nang mới thành công!');
+                        setSelectedHandbookToEdit(null);
+                        e.currentTarget.reset();
+                        await fetchHandbooks();
+                      } else {
+                        showToast(res.message || 'Lỗi xử lý cẩm nang.');
+                      }
+                    } catch (err: any) {
+                      showToast(`Lỗi: ${err.message}`);
+                    }
+                  }} className="space-y-4 text-xs">
+                    
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-400">Tiêu đề cẩm nang</label>
+                      <input 
+                        type="text" 
+                        name="title" 
+                        key={selectedHandbookToEdit ? `title-${selectedHandbookToEdit.id}` : 'title-new'}
+                        defaultValue={selectedHandbookToEdit?.title || ''} 
+                        placeholder="VD: Hướng dẫn kích hoạt khóa bảo mật 2 lớp cho Gmail" 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-400">Phân loại danh mục</label>
+                      <select 
+                        name="category" 
+                        key={selectedHandbookToEdit ? `cat-${selectedHandbookToEdit.id}` : 'cat-new'}
+                        defaultValue={selectedHandbookToEdit?.category || 'account'} 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800"
+                      >
+                        <option value="account">Bảo vệ tài khoản</option>
+                        <option value="links">Nhận diện link giả</option>
+                        <option value="social">Mạng xã hội an toàn</option>
+                        <option value="payment">Giao dịch online</option>
+                        <option value="seniors">Dành cho Người lớn tuổi</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-400">Mô tả tóm tắt</label>
+                      <textarea 
+                        name="summary" 
+                        rows={2} 
+                        key={selectedHandbookToEdit ? `sum-${selectedHandbookToEdit.id}` : 'sum-new'}
+                        defaultValue={selectedHandbookToEdit?.summary || ''} 
+                        placeholder="Bảo vệ hòm thư cốt lõi - nơi lưu trữ liên kết khôi phục tất cả tài khoản của bạn..." 
+                        className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-400">Các bước thực hiện (Mỗi bước 1 dòng)</label>
+                      <textarea 
+                        name="steps" 
+                        rows={4} 
+                        key={selectedHandbookToEdit ? `steps-${selectedHandbookToEdit.id}` : 'steps-new'}
+                        defaultValue={selectedHandbookToEdit?.steps.join('\n') || ''} 
+                        placeholder="Bước 1: Truy cập cài đặt tài khoản Google&#10;Bước 2: Chọn bảo mật -> Xác minh 2 bước&#10;Bước 3: Tải mã dự phòng lưu trữ ngoại tuyến" 
+                        className="w-full border rounded-xl px-3 py-2 bg-white font-medium leading-relaxed text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="font-bold text-slate-400">Độ khó thực hiện</label>
+                        <input 
+                          type="text" 
+                          name="difficulty" 
+                          key={selectedHandbookToEdit ? `diff-${selectedHandbookToEdit.id}` : 'diff-new'}
+                          defaultValue={selectedHandbookToEdit?.difficulty || 'Dễ thực hiện'} 
+                          placeholder="Dễ thực hiện / Trung bình" 
+                          className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                          required 
+                        />
                       </div>
-                    ))}
+                      <div className="space-y-1">
+                        <label className="font-bold text-slate-400">Đối tượng khuyên dùng</label>
+                        <input 
+                          type="text" 
+                          name="recommendFor" 
+                          key={selectedHandbookToEdit ? `rec-${selectedHandbookToEdit.id}` : 'rec-new'}
+                          defaultValue={selectedHandbookToEdit?.recommendFor || 'Tất cả mọi người'} 
+                          placeholder="Mọi người / Người cao tuổi" 
+                          className="w-full border rounded-xl px-3 py-2 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200 border-slate-200 dark:border-slate-800" 
+                          required 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      {selectedHandbookToEdit && (
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedHandbookToEdit(null)}
+                          className="flex-1 py-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition font-bold"
+                        >
+                          HỦY
+                        </button>
+                      )}
+                      <button 
+                        type="submit" 
+                        className="flex-1 py-2 bg-blue-900 text-white font-bold rounded-xl hover:bg-blue-850 transition shadow-sm"
+                      >
+                        {selectedHandbookToEdit ? 'CẬP NHẬT CẨM NANG' : 'LƯU CẨM NANG'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Handbooks List */}
+                <div className={`lg:col-span-7 p-5 rounded-2xl border shadow-sm space-y-4 ${
+                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                }`}>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider border-b pb-2">Danh sách cẩm nang hiện có</h3>
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    {handbooks.length === 0 ? (
+                      <p className="text-center py-10 text-slate-400 font-semibold">Chưa có cẩm nang nào được tạo.</p>
+                    ) : (
+                      handbooks.map(g => (
+                        <div key={g.id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-950/20 transition space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-slate-900 dark:text-white text-xs">{g.title}</h4>
+                              <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase">
+                                <span className="bg-blue-500/10 text-blue-700 px-2 py-0.5 rounded">
+                                  Danh mục: {g.category}
+                                </span>
+                                <span>•</span>
+                                <span>Độ khó: {g.difficulty}</span>
+                                <span>•</span>
+                                <span>Đối tượng: {g.recommendFor}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => setSelectedHandbookToEdit(g)}
+                                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-blue-700 font-medium"
+                                title="Sửa"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Bạn có chắc chắn muốn xóa cẩm nang này không?')) {
+                                    try {
+                                      const res = await api.delete(`/api/admin/handbooks/${g.id}`);
+                                      if (res.success) {
+                                        showToast('Xóa cẩm nang thành công.');
+                                        await fetchHandbooks();
+                                      } else {
+                                        showToast(res.message || 'Lỗi xóa cẩm nang.');
+                                      }
+                                    } catch (err: any) {
+                                      showToast(`Lỗi: ${err.message}`);
+                                    }
+                                  }
+                                }}
+                                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-rose-600 font-medium"
+                                title="Xóa"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <p className="text-[11px] text-slate-500 leading-relaxed text-justify">{g.summary}</p>
+                          
+                          <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">Các bước:</span>
+                            <ul className="list-decimal list-inside text-[11px] text-slate-600 dark:text-slate-400 space-y-1 font-medium">
+                              {g.steps.map((s, idx) => (
+                                <li key={idx} className="truncate">{s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
