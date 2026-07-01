@@ -1,0 +1,148 @@
+--- Categories ---
+Categories in DB: [
+  {
+    "id": "6a43979a441ebd55f0160764",
+    "name": "Cảnh báo lừa đảo",
+    "slug": "canh-bao-lua-dao",
+    "description": "Các bài viết cảnh báo thủ đoạn lừa đảo trực tuyến mới nhất",
+    "parentId": null,
+    "icon": "ShieldAlert",
+    "color": "#EF4444",
+    "sortOrder": 1,
+    "isVisible": true,
+    "createdAt": "2026-06-30T10:16:58.870Z",
+    "updatedAt": "2026-06-30T10:16:58.870Z"
+  },
+  {
+    "id": "6a43979b441ebd55f0160765",
+    "name": "An ninh mạng",
+    "slug": "an-ninh-mang",
+    "description": "Tin tức, phân tích tình hình an toàn thông tin mạng",
+    "parentId": null,
+    "icon": "Globe",
+    "color": "#3B82F6",
+    "sortOrder": 2,
+    "isVisible": true,
+    "createdAt": "2026-06-30T10:16:59.064Z",
+    "updatedAt": "2026-06-30T10:16:59.064Z"
+  },
+  {
+    "id": "6a43979b441ebd55f0160766",
+    "name": "Kiến thức an toàn số",
+    "slug": "kien-thuc",
+    "description": "Giải thích thuật ngữ, định nghĩa về an toàn thông tin",
+    "parentId": null,
+    "icon": "BookOpen",
+    "color": "#10B981",
+    "sortOrder": 3,
+    "isVisible": true,
+    "createdAt": "2026-06-30T10:16:59.233Z",
+    "updatedAt": "2026-06-30T10:16:59.233Z"
+  },
+  {
+    "id": "6a43979b441ebd55f0160767",
+    "name": "Kỹ năng & Mẹo",
+    "slug": "meo-huu-ich",
+    "description": "Các hướng dẫn thực hành tự bảo vệ tài khoản, thiết bị",
+    "parentId": null,
+    "icon": "CheckSquare",
+    "color": "#F59E0B",
+    "sortOrder": 4,
+    "isVisible": true,
+    "createdAt": "2026-06-30T10:16:59.406Z",
+    "updatedAt": "2026-06-30T10:16:59.406Z"
+  },
+  {
+    "id": "6a43979b441ebd55f0160768",
+    "name": "Báo cáo cộng đồng",
+    "slug": "cong-dong",
+    "description": "Thông tin nghi vấn lừa đảo do người dân phản ánh đã được xác minh",
+    "parentId": null,
+    "icon": "Users",
+    "color": "#8B5CF6",
+    "sortOrder": 5,
+    "isVisible": true,
+    "createdAt": "2026-06-30T10:16:59.577Z",
+    "updatedAt": "2026-06-30T10:16:59.577Z"
+  }
+]
+
+--- Articles ---
+Articles in DB: [
+  {
+    "id": "6a43979b441ebd55f016076a",
+    "title": "Cảnh báo cuộc gọi lừa đảo mạo danh cơ quan công an kích hoạt VNeID",
+    "slug": "canh-bao-cuoc-goi-lua-dao-mao-danh-cong-an-vneid",
+    "summary": "Kẻ gian gọi điện tự xưng là cán bộ công an phường/quận yêu cầu người dân cài đặt ứng dụng VNeID giả mạo nhằm chiếm đoạt tài khoản ngân hàng.",
+    "content": "<p>Cục An toàn thông tin đưa ra cảnh báo khẩn cấp về thủ đoạn mạo danh công an hướng dẫn cài đặt ứng dụng dịch vụ công giả mạo...</p>",
+    "contentType": "html",
+    "coverImageId": null,
+    "categoryId": "6a43979a441ebd55f0160764",
+    "tags": [
+      "lua dao",
+      "vneid",
+      "mao danh"
+    ],
+    "warningLevel": "warning",
+    "sourceId": "6a43979b441ebd55f0160769",
+    "sourceUrl": "https://ais.gov.vn/canh-bao/vneid-mao-danh",
+    "authorId": "6a43979a441ebd55f0160763",
+    "status": "published",
+    "isFeatured": true,
+    "views": 0,
+    "publishedAt": "2026-06-30T10:16:59.922Z",
+    "createdAt": "2026-06-30T10:16:59.922Z",
+    "updatedAt": "2026-07-01T03:45:32.718Z",
+    "category": {
+      "id": "6a43979a441ebd55f0160764",
+      "name": "Cảnh báo lừa đảo",
+      "slug": "canh-bao-lua-dao",
+      "description": "Các bài viết cảnh báo thủ đoạn lừa đảo trực tuyến mới nhất",
+      "parentId": null,
+      "icon": "ShieldAlert",
+      "color": "#EF4444",
+      "sortOrder": 1,
+      "isVisible": true,
+      "createdAt": "2026-06-30T10:16:58.870Z",
+      "updatedAt": "2026-06-30T10:16:58.870Z"
+    }
+  },
+  {
+    "id": "6a4480d78c24e01a103e2d3a",
+    "title": "🚨 BIÊN LAI CHUYỂN KHOẢN CÓ THỂ LÀ GIẢ – TIỀN VÀO TÀI KHOẢN RỒI HÃY GIAO HÀNG",
+    "slug": "bien-lai-chuyen-khoan-co-the-la-gia-tien-vao-tai-khoan-roi-hay-giao-hang",
+    "summary": "Khách quét mã QR, đưa màn hình “chuyển khoản thành công” và hối giao hàng ngay. Nghe rất quen, nhưng đây cũng là điểm khiến nhiều cửa hàng dễ chủ quan.",
+    "content": "Theo Cổng Thông tin điện tử Bộ Công an, ngày 27/6/2026, Cơ quan Cảnh sát điều tra Công an tỉnh Đồng Tháp cho biết đang tạm giữ hình sự một trường hợp để điều tra về hành vi lừa đảo chiếm đoạt tài sản liên quan đến việc dùng ứng dụng tạo thông báo chuyển tiền giả.Thủ đoạn được cơ quan chức năng nêu là: đối tượng tìm đến các cửa hàng, cơ sở kinh doanh có thanh toán bằng mã QR, thực hiện thao tác như đang chuyển khoản, sau đó cho chủ cửa hàng xem thông báo “chuyển tiền thành công”. Tuy nhiên, thông báo này là giả và tiền thực tế không được chuyển vào tài khoản của người bán. Với cách này, số tiền bị chiếm đoạt được nêu là gần 12 triệu đồng.<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"⚠️\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/tdc/1/16/26a0.png\" /></span> Người bán hàng cần đặc biệt lưu ý:<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"✅\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/t33/1/16/2705.png\" /></span> Không giao hàng chỉ vì khách đưa ảnh biên lai hoặc màn hình “chuyển khoản thành công”.<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"✅\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/t33/1/16/2705.png\" /></span> Luôn kiểm tra tài khoản ngân hàng của chính mình trước khi giao hàng.<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"✅\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/t33/1/16/2705.png\" /></span> Bật thông báo biến động số dư, nhưng vẫn nên đối chiếu lại trong app ngân hàng.<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"✅\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/t33/1/16/2705.png\" /></span> Với đơn hàng có giá trị cao, chỉ giao khi tiền đã thực sự vào tài khoản.<span class=\"html-span xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x3nfvp2 x1j61x8r x1fcty0u xdj266r xat24cr xm2jcoa x1mpyi22 xxymvpz xlup9mm x1kky2od\"><img height=\"16\" width=\"16\" class=\"xz74otr x15mokao x1ga7v0g x16uus16 xbiv7yw\" alt=\"✅\" src=\"https://static.xx.fbcdn.net/images/emoji.php/v9/t33/1/16/2705.png\" /></span> Nếu phát hiện dấu hiệu nghi vấn, hãy giữ lại bằng chứng, hình ảnh camera, thông tin giao dịch và liên hệ cơ quan công an gần nhất.Biên lai có thể bị làm giả.Màn hình chuyển khoản có thể bị dựng lại.Tiền vào tài khoản rồi mới giao hàng.Nguồn: Cổng Thông tin điện tử Bộ Công an – “Bắt giữ đối tượng dùng ứng dụng tạo thông báo chuyển tiền giả để lừa đảo” – 27/06/2026.<span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/uytinmang?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#UyTinMang</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/antiscams?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#AntiScams</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/canhbaoluadao?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#CanhBaoLuaDao</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/chuyenkhoangia?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#ChuyenKhoanGia</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/maqr?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#MaQR</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/thanhtoanonline?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#ThanhToanOnline</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/antoanso?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#AnToanSo</a></span> <span class=\"html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs\"><a class=\"x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xkrqix3 x1sur9pj x1fey0fg x1s688f\" href=\"https://www.facebook.com/hashtag/phongchongluadao?__cft__[0]=AZbH1WpoyRdyYsbLBWmFh-VXtZibOuNkR3PvJtQZ_if58fdHbMabj37Z6tsyjmN6ebqHMCpjswV3Ne4Bvahg0TzuGGy32tFYBSVQBjoo2RLVWpTF6Y899OP-EqLNLLnoRod7UWGKM8FIrnI5ffK-3Bk6&amp;__tn__=*NK-R\">#PhongChongLuaDao</a></span> ",
+    "contentType": "html",
+    "coverImageId": null,
+    "categoryId": "6a43979a441ebd55f0160764",
+    "tags": [
+      "an toàn số",
+      "lừa đảo",
+      "cảnh báo"
+    ],
+    "warningLevel": "normal",
+    "sourceId": null,
+    "sourceUrl": "https://www.facebook.com/uytinmang.vn",
+    "authorId": "6a43979a441ebd55f0160763",
+    "status": "published",
+    "isFeatured": false,
+    "views": 0,
+    "publishedAt": "2026-07-01T02:52:07.670Z",
+    "createdAt": "2026-07-01T02:52:07.670Z",
+    "updatedAt": "2026-07-01T04:14:43.967Z",
+    "category": {
+      "id": "6a43979a441ebd55f0160764",
+      "name": "Cảnh báo lừa đảo",
+      "slug": "canh-bao-lua-dao",
+      "description": "Các bài viết cảnh báo thủ đoạn lừa đảo trực tuyến mới nhất",
+      "parentId": null,
+      "icon": "ShieldAlert",
+      "color": "#EF4444",
+      "sortOrder": 1,
+      "isVisible": true,
+      "createdAt": "2026-06-30T10:16:58.870Z",
+      "updatedAt": "2026-06-30T10:16:58.870Z"
+    }
+  }
+]

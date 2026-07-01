@@ -71,14 +71,14 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
       if (filesRes.success) {
         const mappedFiles = filesRes.data.map((f: any) => ({
           id: f.id,
-          name: f.filename,
+          name: f.originalName,
           url: f.url,
           type: f.mimeType?.startsWith('image/') ? 'image' : f.mimeType?.includes('pdf') ? 'pdf' : 'docx',
           size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
           createdAt: new Date(f.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
           uploadedBy: f.uploadedBy || 'admin',
           folder: f.folderId || 'root',
-          altText: f.altText || f.filename.split('.')[0],
+          altText: f.altText || (f.originalName ? f.originalName.split('.')[0] : 'file'),
           caption: f.caption || ''
         }));
         setFiles(mappedFiles);
@@ -106,7 +106,7 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
           formData.append('folderId', currentFolderId);
           formData.append('altText', file.name.split('.')[0]);
 
-          await api.post('/api/admin/media/upload', formData);
+          await api.upload('/api/admin/media/upload', formData);
         }
         await fetchMediaData();
       } catch (err: any) {
@@ -178,7 +178,7 @@ export default function MediaLibrary({ onSelectImage, isSelectMode = false }: Me
         formData.append('folderId', currentFolderId);
         formData.append('altText', file.name.split('.')[0]);
 
-        await api.post('/api/admin/media/upload', formData);
+        await api.upload('/api/admin/media/upload', formData);
         await fetchMediaData();
       } catch (err: any) {
         alert(`Lỗi upload file: ${err.message}`);

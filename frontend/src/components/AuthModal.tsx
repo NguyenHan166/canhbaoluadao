@@ -222,6 +222,69 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     }, 400);
   };
 
+  // Select mock Google account flow
+  const handleSelectGoogleAccount = async (name: string, email: string, avatarUrl: string) => {
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+    setShowGoogleChooser(false);
+
+    try {
+      const response = await api.post('/api/auth/google', {
+        token: 'mock-google-token',
+        mockUser: { name, email, avatarUrl }
+      });
+
+      setIsLoading(false);
+
+      if (response.success && response.accessToken) {
+        localStorage.setItem('lcs_user_token', response.accessToken);
+        localStorage.setItem('lcs_user_refresh_token', response.refreshToken);
+        
+        const loggedInUser: User = {
+          uid: response.user.id,
+          name: response.user.name,
+          email: response.user.email,
+          phone: '',
+          avatarUrl: response.user.avatarUrl || avatarUrl,
+        };
+        
+        setSuccess('Đăng nhập bằng tài khoản Google thành công!');
+        setTimeout(() => {
+          onAuthSuccess(loggedInUser);
+          onClose();
+        }, 1000);
+      } else {
+        const loggedInUser: User = {
+          uid: 'google-' + Math.random().toString(36).substr(2, 9),
+          name,
+          email,
+          phone: '',
+          avatarUrl
+        };
+        setSuccess('Đăng nhập bằng tài khoản Google (Mock) thành công!');
+        setTimeout(() => {
+          onAuthSuccess(loggedInUser);
+          onClose();
+        }, 1000);
+      }
+    } catch (err) {
+      setIsLoading(false);
+      const loggedInUser: User = {
+        uid: 'google-' + Math.random().toString(36).substr(2, 9),
+        name,
+        email,
+        phone: '',
+        avatarUrl
+      };
+      setSuccess('Đăng nhập bằng tài khoản Google (Mock Client) thành công!');
+      setTimeout(() => {
+        onAuthSuccess(loggedInUser);
+        onClose();
+      }, 1000);
+    }
+  };
+
   // Handle Google Login success by exchanging id_token with backend
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setError('');
@@ -578,7 +641,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 size="large"
                 shape="rectangular"
                 width="320"
-                locale="vi"
               />
             </div>
 

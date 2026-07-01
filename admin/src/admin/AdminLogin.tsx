@@ -3,15 +3,20 @@ import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
 
 interface AdminLoginProps {
-  onLoginSuccess: (email: string) => void;
+  onLoginSuccess: (email: string, rememberMe: boolean) => void;
 }
 
 export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('lcs_admin_remembered_email') || '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('lcs_admin_remember_me') !== 'false';
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +26,18 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     try {
       const response = await api.post('/api/auth/login', { email, password });
       if (response.success && response.accessToken) {
-        localStorage.setItem('lcs_admin_token', response.accessToken);
-        localStorage.setItem('lcs_admin_refresh_token', response.refreshToken);
-        onLoginSuccess(response.user.email);
+        if (rememberMe) {
+          localStorage.setItem('lcs_admin_remembered_email', email);
+          localStorage.setItem('lcs_admin_remember_me', 'true');
+        } else {
+          localStorage.removeItem('lcs_admin_remembered_email');
+          localStorage.setItem('lcs_admin_remember_me', 'false');
+        }
+        
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('lcs_admin_token', response.accessToken);
+        storage.setItem('lcs_admin_refresh_token', response.refreshToken);
+        onLoginSuccess(response.user.email, rememberMe);
       } else {
         setError(response.message || 'Xác thực hệ thống không thành công.');
       }
@@ -127,7 +141,8 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  defaultChecked
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-800 rounded bg-slate-900"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-xs text-slate-400">

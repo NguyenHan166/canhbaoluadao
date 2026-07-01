@@ -130,6 +130,12 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
     try {
       const articlesRes = await api.get('/api/admin/articles');
       if (articlesRes.success) {
+        const levelMapRev: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
+          normal: 'low',
+          notice: 'medium',
+          warning: 'high',
+          urgent: 'critical'
+        };
         const mappedArticles = articlesRes.data.map((art: any) => ({
           id: art.id,
           title: art.title,
@@ -138,12 +144,13 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
           content: art.content,
           category: art.category?.slug || 'canh-bao-lua-dao',
           categoryLabel: art.category?.name || 'Cảnh báo lừa đảo',
-          thumbnail: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
+          thumbnail: art.coverImageUrl || 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=800&q=80',
           author: art.author?.name || 'Admin',
           date: new Date(art.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
           readTime: '3 phút đọc',
           views: art.views || 0,
-          warningLevel: art.warningLevel || 'high',
+          warningLevel: levelMapRev[art.warningLevel] || 'high',
+          status: art.status || 'published',
           sourceName: art.source?.name || 'Ban biên tập',
           sourceUrl: art.sourceUrl || ''
         }));
@@ -305,16 +312,21 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
   };
 
   // Toggle show/hide article state
-  const handleToggleHideArticle = (id: string) => {
-    const updated = articles.map(a => {
-      if (a.id === id) {
-        // Toggle simulated warning level low as draft
-        return { ...a, warningLevel: a.warningLevel === 'low' ? 'medium' : 'low' as 'low' | 'medium' };
+  const handleToggleHideArticle = async (id: string) => {
+    try {
+      const art = articles.find(a => a.id === id);
+      if (!art) return;
+      const newStatus = art.status === 'published' ? 'draft' : 'published';
+      const response = await api.patch(`/api/admin/articles/${id}/status`, { status: newStatus });
+      if (response.success) {
+        await fetchArticles();
+        showToast('Đã cập nhật trạng thái hiển thị.');
+      } else {
+        showToast(response.message || 'Lỗi cập nhật trạng thái.');
       }
-      return a;
-    });
-    saveArticles(updated);
-    showToast('Đã cập nhật trạng thái hiển thị.');
+    } catch (err: any) {
+      showToast(`Lỗi: ${err.message}`);
+    }
   };
 
   // Import mock article from Cục ATTT website
@@ -475,11 +487,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                           (a.author && a.author.toLowerCase().includes(artFilterSearch.toLowerCase()));
     const matchesCategory = artFilterCategory ? a.category === artFilterCategory : true;
     const matchesWarn = artFilterWarn ? a.warningLevel === artFilterWarn : true;
-    // status mapping: published is low/critical, draft is medium-low
-    const matchesStatus = artFilterStatus ? (
-      artFilterStatus === 'published' ? a.warningLevel !== 'low' : 
-      artFilterStatus === 'draft' ? a.warningLevel === 'low' : true
-    ) : true;
+    const matchesStatus = artFilterStatus ? a.status === artFilterStatus : true;
     return matchesSearch && matchesCategory && matchesWarn && matchesStatus;
   });
 
@@ -985,7 +993,7 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                           </tr>
                         ) : (
                           filteredArticles.map(art => {
-                            const isDraft = art.warningLevel === 'low';
+                            const isDraft = art.status === 'draft' || art.status === 'hidden';
                             return (
                               <tr key={art.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition">
                                 <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-slate-100 max-w-[280px] truncate" title={art.title}>
@@ -1106,9 +1114,10 @@ export default function AdminDashboard({ onLogout, adminEmail }: AdminDashboardP
                       content: compiled.content || '',
                       categoryId,
                       warningLevel: mappedLevel,
-                      status: compiled.warningLevel === 'low' ? 'draft' : 'published',
+                      status: compiled.status || 'published',
                       isFeatured: compiled.isHero || compiled.isSubHero || false,
                       sourceUrl: compiled.sourceUrl || undefined,
+                      coverImageUrl: compiled.thumbnail || undefined,
                       tags: ['an toàn số', 'lừa đảo', 'cảnh báo']
                     };
 

@@ -1,7 +1,7 @@
 const BASE_URL = 'http://localhost:3001';
 
 const getHeaders = () => {
-  const token = localStorage.getItem('lcs_admin_token');
+  const token = localStorage.getItem('lcs_admin_token') || sessionStorage.getItem('lcs_admin_token');
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
@@ -62,7 +62,7 @@ export const api = {
   },
 
   async upload(endpoint: string, formData: FormData) {
-    const token = localStorage.getItem('lcs_admin_token');
+    const token = localStorage.getItem('lcs_admin_token') || sessionStorage.getItem('lcs_admin_token');
     const headers: HeadersInit = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

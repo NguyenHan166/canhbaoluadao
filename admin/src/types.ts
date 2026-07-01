@@ -26,6 +26,7 @@ export interface Article {
   isHero?: boolean;
   isSubHero?: boolean;
   warningLevel?: 'low' | 'medium' | 'high' | 'critical';
+  status?: 'draft' | 'pending' | 'published' | 'hidden';
   sourceName?: string;
   sourceUrl?: string;
   quickSummaryPoints?: string[];

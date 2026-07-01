@@ -48,13 +48,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const accessToken = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '7d' }
     );
 
     const refreshToken = jwt.sign(
       { userId: user.id },
       JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Update lastLoginAt
@@ -131,7 +131,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     const newAccessToken = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '7d' }
     );
 
     return res.status(200).json({
@@ -233,13 +233,13 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     const accessToken = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '7d' }
     );
 
     const refreshToken = jwt.sign(
       { userId: user.id },
       JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     await prisma.user.update({

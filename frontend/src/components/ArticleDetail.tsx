@@ -256,113 +256,121 @@ export default function ArticleDetail({
 
       {/* 6. MAIN SECTIONS OF CONTENT */}
       <div className="space-y-6 text-slate-800 text-sm sm:text-base leading-relaxed">
-        
-        {/* SECTION A: QUICK SUMMARY */}
-        {article.quickSummaryPoints && article.quickSummaryPoints.length > 0 && (
-          <div className="bg-rose-50/50 border border-rose-100 p-5 rounded-2xl space-y-3">
-            <h3 className="text-sm font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldAlert className="w-4.5 h-4.5 text-rose-600" />
-              TÓM TẮT NHANH VỤ VIỆC
-            </h3>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-700 font-medium">
-              {article.quickSummaryPoints.map((pt, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="bg-rose-100 text-rose-700 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                    {idx + 1}
-                  </span>
-                  <span>{pt}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {article.content ? (
+          <div 
+            className="prose max-w-none text-slate-700 text-sm sm:text-[15px] leading-relaxed text-justify font-sans"
+            dangerouslySetInnerHTML={{ __html: article.content }}
+          />
+        ) : (
+          <>
+            {/* SECTION A: QUICK SUMMARY */}
+            {article.quickSummaryPoints && article.quickSummaryPoints.length > 0 && (
+              <div className="bg-rose-50/50 border border-rose-100 p-5 rounded-2xl space-y-3">
+                <h3 className="text-sm font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldAlert className="w-4.5 h-4.5 text-rose-600" />
+                  TÓM TẮT NHANH VỤ VIỆC
+                </h3>
+                <ul className="space-y-2 text-xs sm:text-sm text-slate-700 font-medium">
+                  {article.quickSummaryPoints.map((pt, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="bg-rose-100 text-rose-700 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {/* SECTION B: DETAILED SCENARIO / WHAT IS THE CASE */}
-        <div className="space-y-3">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-gray-100 pb-1 flex items-center gap-1.5">
-            <HelpCircle className="w-5 h-5 text-blue-600" />
-            Vụ việc và kịch bản chi tiết:
-          </h3>
-          <p className="text-justify text-slate-700 text-sm sm:text-[15px]">
-            Hiện nay, các thế lực tội phạm sử dụng công nghệ cao đang đẩy mạnh một phương thức lừa đảo tinh vi nhắm vào người dùng Việt Nam. Bằng việc thu thập trái phép thông tin cá nhân bao gồm số căn cước công dân (CCCD), họ tên đầy đủ, cơ quan làm việc, các đối tượng đã xây dựng niềm tin ban đầu cực kỳ vững chắc khiến nạn nhân khó lòng nghi ngờ.
-          </p>
-        </div>
-
-        {/* SECTION C: TACTICS & BEHAVIOR */}
-        {article.tactics && article.tactics.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm sm:text-base uppercase tracking-wide">
-              Thủ đoạn chi tiết của kẻ gian:
-            </h4>
-            <ul className="space-y-2">
-              {article.tactics.map((tac, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-slate-700 text-sm">
-                  <CornerDownRight className="w-4 h-4 text-rose-500 shrink-0 mt-1" />
-                  <span>{tac}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* SECTION D: SIGNS OF SCAMS */}
-        {article.signs && article.signs.length > 0 && (
-          <div className="bg-amber-50/50 border border-amber-100 p-5 rounded-2xl space-y-3">
-            <h4 className="font-bold text-amber-900 text-sm sm:text-base uppercase tracking-wide flex items-center gap-1.5">
-              <AlertTriangle className="w-4.5 h-4.5 text-amber-600" />
-              Dấu hiệu nhận diện lừa đảo:
-            </h4>
-            <ul className="list-disc pl-4 space-y-2 text-slate-700 text-sm">
-              {article.signs.map((sig, idx) => (
-                <li key={idx} className="leading-relaxed">{sig}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* SECTION E: HOW TO PREVENT */}
-        {article.prevention && article.prevention.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 text-sm sm:text-base uppercase tracking-wide border-l-4 border-blue-900 pl-3">
-              Biện pháp chủ động phòng ngừa:
-            </h4>
-            <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-gray-100">
-              {article.prevention.map((prev, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 text-slate-700 text-sm">
-                  <span className="text-emerald-600 font-extrabold mt-0.5">✓</span>
-                  <span>{prev}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* HIGH-SECURITY CALLOUT BOX */}
-        <div className="bg-rose-700 text-white p-5 rounded-2xl shadow-xs space-y-2">
-          <span className="font-extrabold text-xs tracking-wider uppercase bg-white/20 px-2 py-0.5 rounded">QUY TẮC PHÒNG VỆ SINH MẠNG SỐ</span>
-          <p className="font-bold text-sm sm:text-base">
-            "Tuyệt đối KHÔNG cung cấp mã OTP, mật khẩu, mã xác minh, liên kết ngân hàng hoặc thông tin thẻ tín dụng của bạn cho bất kỳ ai, dưới bất kỳ hình thức nào - Kể cả khi đối phương tự xưng là cán bộ Công an, tòa án, nhân viên ngân hàng."
-          </p>
-        </div>
-
-        {/* SECTION F: WHAT TO DO IF SCAMMED */}
-        {article.whatToDoIfScammed && article.whatToDoIfScammed.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <h4 className="font-bold text-rose-700 text-sm sm:text-base uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldAlert className="w-4.5 h-4.5 text-rose-600" />
-              Nếu đã lỡ làm theo hướng dẫn của chúng thì cần xử lý gì?
-            </h4>
+            {/* SECTION B: DETAILED SCENARIO / WHAT IS THE CASE */}
             <div className="space-y-3">
-              {article.whatToDoIfScammed.map((step, idx) => (
-                <div key={idx} className="flex gap-3 bg-red-50/50 p-3.5 rounded-xl border border-red-100">
-                  <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                    {idx + 1}
-                  </span>
-                  <p className="text-slate-700 text-xs sm:text-sm font-semibold">{step}</p>
-                </div>
-              ))}
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-gray-100 pb-1 flex items-center gap-1.5">
+                <HelpCircle className="w-5 h-5 text-blue-600" />
+                Vụ việc và kịch bản chi tiết:
+              </h3>
+              <p className="text-justify text-slate-700 text-sm sm:text-[15px]">
+                Hiện nay, các thế lực tội phạm sử dụng công nghệ cao đang đẩy mạnh một phương thức lừa đảo tinh vi nhắm vào người dùng Việt Nam. Bằng việc thu thập trái phép thông tin cá nhân bao gồm số căn cước công dân (CCCD), họ tên đầy đủ, cơ quan làm việc, các đối tượng đã xây dựng niềm tin ban đầu cực kỳ vững chắc khiến nạn nhân khó lòng nghi ngờ.
+              </p>
             </div>
-          </div>
+
+            {/* SECTION C: TACTICS & BEHAVIOR */}
+            {article.tactics && article.tactics.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-bold text-slate-900 text-sm sm:text-base uppercase tracking-wide">
+                  Thủ đoạn chi tiết của kẻ gian:
+                </h4>
+                <ul className="space-y-2">
+                  {article.tactics.map((tac, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-slate-700 text-sm">
+                      <CornerDownRight className="w-4 h-4 text-rose-500 shrink-0 mt-1" />
+                      <span>{tac}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* SECTION D: SIGNS OF SCAMS */}
+            {article.signs && article.signs.length > 0 && (
+              <div className="bg-amber-50/50 border border-amber-100 p-5 rounded-2xl space-y-3">
+                <h4 className="font-bold text-amber-900 text-sm sm:text-base uppercase tracking-wide flex items-center gap-1.5">
+                  <AlertTriangle className="w-4.5 h-4.5 text-amber-600" />
+                  Dấu hiệu nhận diện lừa đảo:
+                </h4>
+                <ul className="list-disc pl-4 space-y-2 text-slate-700 text-sm">
+                  {article.signs.map((sig, idx) => (
+                    <li key={idx} className="leading-relaxed">{sig}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* SECTION E: HOW TO PREVENT */}
+            {article.prevention && article.prevention.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-bold text-slate-900 text-sm sm:text-base uppercase tracking-wide border-l-4 border-blue-900 pl-3">
+                  Biện pháp chủ động phòng ngừa:
+                </h4>
+                <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-gray-100">
+                  {article.prevention.map((prev, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-slate-700 text-sm">
+                      <span className="text-emerald-600 font-extrabold mt-0.5">✓</span>
+                      <span>{prev}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* HIGH-SECURITY CALLOUT BOX */}
+            <div className="bg-rose-700 text-white p-5 rounded-2xl shadow-xs space-y-2">
+              <span className="font-extrabold text-xs tracking-wider uppercase bg-white/20 px-2 py-0.5 rounded">QUY TẮC PHÒNG VỆ SINH MẠNG SỐ</span>
+              <p className="font-bold text-sm sm:text-base">
+                "Tuyệt đối KHÔNG cung cấp mã OTP, mật khẩu, mã xác minh, liên kết ngân hàng hoặc thông tin thẻ tín dụng của bạn cho bất kỳ ai, dưới bất kỳ hình thức nào - Kể cả khi đối phương tự xưng là cán bộ Công an, tòa án, nhân viên ngân hàng."
+              </p>
+            </div>
+
+            {/* SECTION F: WHAT TO DO IF SCAMMED */}
+            {article.whatToDoIfScammed && article.whatToDoIfScammed.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h4 className="font-bold text-rose-700 text-sm sm:text-base uppercase tracking-wide flex items-center gap-1.5">
+                  <ShieldAlert className="w-4.5 h-4.5 text-rose-600" />
+                  Nếu đã lỡ làm theo hướng dẫn của chúng thì cần xử lý gì?
+                </h4>
+                <div className="space-y-3">
+                  {article.whatToDoIfScammed.map((step, idx) => (
+                    <div key={idx} className="flex gap-3 bg-red-50/50 p-3.5 rounded-xl border border-red-100">
+                      <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <p className="text-slate-700 text-xs sm:text-sm font-semibold">{step}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* SOURCE CITATION BLOCK */}
@@ -383,7 +391,6 @@ export default function ArticleDetail({
             )}
           </div>
         )}
-
       </div>
 
       {/* 7. SHARE & EMERGENCIES CTA ACTIONS */}

@@ -40,15 +40,16 @@ model Category {
 }
 
 model Article {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  slug         String    @unique
-  summary      String
-  content      String
-  contentType  String    @default("html")
-  coverImageId String?   @db.ObjectId
-  categoryId   String    @db.ObjectId
-  category     Category  @relation(fields: [categoryId], references: [id])
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  slug          String    @unique
+  summary       String
+  content       String
+  contentType   String    @default("html")
+  coverImageId  String?   @db.ObjectId
+  coverImageUrl String?
+  categoryId    String    @db.ObjectId
+  category      Category  @relation(fields: [categoryId], references: [id])
   tags         String[]
   warningLevel String // normal, notice, warning, urgent, verified
   sourceId     String?   @db.ObjectId
